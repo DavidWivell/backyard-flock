@@ -26,7 +26,8 @@
             flex-direction: column;
             align-items: center;
             user-select: none;
-            height: 100vh;
+            /* Uses Dynamic Viewport Height to account for mobile navigation bars */
+            height: 100dvh; 
             overflow: hidden; 
         }
         
@@ -45,6 +46,7 @@
             border-bottom: 3px solid #444;
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
             position: relative;
+            flex-shrink: 0;
         }
         h1 { margin: 0 0 5px 0; color: var(--primary); font-size: 1.5em; }
         #egg-count { font-size: 2em; font-weight: bold; }
@@ -77,6 +79,7 @@
         
         .main-button-container {
             padding: 15px;
+            flex-shrink: 0;
         }
         .main-button {
             background-color: var(--primary);
@@ -96,6 +99,7 @@
             display: flex;
             background: var(--surface);
             border-bottom: 2px solid #444;
+            flex-shrink: 0;
         }
         .tab-btn {
             flex: 1;
@@ -117,6 +121,8 @@
             flex: 1;
             overflow-y: auto;
             padding: 15px;
+            /* Massive padding block to ensure bottom items clear mobile UI */
+            padding-bottom: 120px; 
         }
         .tab-content.active { display: block; }
 
@@ -159,15 +165,7 @@
             padding: 10px;
             border-radius: 8px;
         }
-        .auto-buy-toggle {
-            margin-top: 5px;
-            font-size: 0.8em;
-            color: var(--primary);
-            display: flex;
-            align-items: center;
-        }
 
-        /* Offline Modal */
         #offline-modal {
             display: none;
             position: fixed;
@@ -223,7 +221,6 @@
         <button class="tab-btn" onclick="switchTab('prestige')">Prestige</button>
     </div>
 
-    <!-- TAB 1: GENERATORS -->
     <div id="tab-generators" class="tab-content active">
         <div class="multi-buy-bar">
             <span style="font-weight:bold;">Purchase Quantity:</span>
@@ -232,12 +229,10 @@
         <div id="upgrades-container"></div>
     </div>
 
-    <!-- TAB 2: MANAGERS -->
     <div id="tab-managers" class="tab-content">
         <div id="managers-container"></div>
     </div>
 
-    <!-- TAB 3: PRESTIGE -->
     <div id="tab-prestige" class="tab-content">
         <div class="list-item prestige-box">
             <div class="info">
@@ -253,7 +248,6 @@
     </div>
 </div>
 
-<!-- Offline Modal -->
 <div id="offline-modal">
     <div class="modal-content">
         <h2 style="color: var(--primary); margin-top:0;">Welcome Back!</h2>
@@ -315,38 +309,32 @@
     const COST_MULTIPLIER = 1.15;
 
     let generators = [
-        { id: 'chick', name: 'Chick', baseCost: 10, baseProd: 1, owned: 0, autoOn: false },
-        { id: 'coop', name: 'Backyard Coop', baseCost: 100, baseProd: 10, owned: 0, autoOn: false },
-        { id: 'enclosure', name: 'Walk-in Enclosure', baseCost: 1200, baseProd: 100, owned: 0, autoOn: false },
-        { id: 'paddock', name: 'Solar-Fenced Paddock', baseCost: 15000, baseProd: 800, owned: 0, autoOn: false },
-        { id: 'barn', name: 'Free-Range Barn', baseCost: 200000, baseProd: 6500, owned: 0, autoOn: false },
-        { id: 'farm', name: 'Commercial Farm', baseCost: 2500000, baseProd: 50000, owned: 0, autoOn: false }
+        { id: 'chick', name: 'Chick', baseCost: 10, baseProd: 1, owned: 0 },
+        { id: 'coop', name: 'Backyard Coop', baseCost: 100, baseProd: 10, owned: 0 },
+        { id: 'enclosure', name: 'Walk-in Enclosure', baseCost: 1200, baseProd: 100, owned: 0 },
+        { id: 'paddock', name: 'Solar-Fenced Paddock', baseCost: 15000, baseProd: 800, owned: 0 },
+        { id: 'barn', name: 'Free-Range Barn', baseCost: 200000, baseProd: 6500, owned: 0 },
+        { id: 'farm', name: 'Commercial Farm', baseCost: 2500000, baseProd: 50000, owned: 0 }
     ];
 
     let managers = [
-        // Production Multipliers
-        { id: 'm1', name: 'Annie', cost: 5000, desc: 'Chick production x2', bought: false, isAuto: false },
-        { id: 'm2', name: 'Lunae', cost: 50000, desc: 'Coop production x2', bought: false, isAuto: false },
-        { id: 'm3', name: 'Cleo', cost: 500000, desc: 'Enclosure production x2', bought: false, isAuto: false },
-        { id: 'm4', name: 'Myel', cost: 5000000, desc: 'Paddock production x2', bought: false, isAuto: false },
-        { id: 'm5', name: 'CoCo', cost: 50000000, desc: 'Barn production x2', bought: false, isAuto: false },
-        { id: 'm6', name: 'Rhiannon', cost: 500000000, desc: 'Farm production x2', bought: false, isAuto: false },
-        
-        // Auto-Buyers (Cost = Generator Base Cost * 1000)
-        { id: 'ab1', name: 'Chick Auto-Buyer', cost: 10000, desc: 'Unlocks Chick Auto-Buy toggle', bought: false, isAuto: true, targetGen: 0 },
-        { id: 'ab2', name: 'Coop Auto-Buyer', cost: 100000, desc: 'Unlocks Coop Auto-Buy toggle', bought: false, isAuto: true, targetGen: 1 },
-        { id: 'ab3', name: 'Enclosure Auto-Buyer', cost: 1200000, desc: 'Unlocks Enclosure Auto-Buy toggle', bought: false, isAuto: true, targetGen: 2 },
-        { id: 'ab4', name: 'Paddock Auto-Buyer', cost: 15000000, desc: 'Unlocks Paddock Auto-Buy toggle', bought: false, isAuto: true, targetGen: 3 },
-        { id: 'ab5', name: 'Barn Auto-Buyer', cost: 200000000, desc: 'Unlocks Barn Auto-Buy toggle', bought: false, isAuto: true, targetGen: 4 },
-        { id: 'ab6', name: 'Farm Auto-Buyer', cost: 2500000000, desc: 'Unlocks Farm Auto-Buy toggle', bought: false, isAuto: true, targetGen: 5 },
-        
-        // Global
-        { id: 'm7', name: 'Bertha', cost: 1000000000, desc: 'Global Egg production +50%', bought: false, isAuto: false },
-        { id: 'm8', name: 'Violet', cost: 10000000000, desc: 'Game runs 25% faster', bought: false, isAuto: false },
-        { id: 'm9', name: 'Marianne', cost: 50000000000, desc: 'Manual clicks yield 100x eggs', bought: false, isAuto: false },
-        { id: 'm10', name: 'Cranberry', cost: 500000000000, desc: 'Global Egg production +200%', bought: false, isAuto: false },
-        { id: 'm11', name: 'Clarabelle', cost: 5000000000000, desc: 'Global Egg production x10', bought: false, isAuto: false }
+        { id: 'm1', name: 'Annie', cost: 5000, desc: 'Chick production x2', bought: false },
+        { id: 'm2', name: 'Lunae', cost: 50000, desc: 'Coop production x2', bought: false },
+        { id: 'm3', name: 'Cleo', cost: 500000, desc: 'Enclosure production x2', bought: false },
+        { id: 'm4', name: 'Myel', cost: 5000000, desc: 'Paddock production x2', bought: false },
+        { id: 'm5', name: 'CoCo', cost: 50000000, desc: 'Barn production x2', bought: false },
+        { id: 'm6', name: 'Rhiannon', cost: 500000000, desc: 'Farm production x2', bought: false },
+        { id: 'm7', name: 'Bertha', cost: 1000000000, desc: 'Global Egg production +50%', bought: false },
+        { id: 'm8', name: 'Violet', cost: 10000000000, desc: 'Game runs 25% faster', bought: false },
+        { id: 'm9', name: 'Marianne', cost: 50000000000, desc: 'Manual clicks yield 100x eggs', bought: false },
+        { id: 'm10', name: 'Cranberry', cost: 500000000000, desc: 'Global Egg production +200%', bought: false },
+        { id: 'm11', name: 'Clarabelle', cost: 5000000000000, desc: 'Global Egg production x10', bought: false }
     ];
+
+    function getManagerBought(id) {
+        const mgr = managers.find(m => m.id === id);
+        return mgr ? mgr.bought : false;
+    }
 
     function switchTab(tabId) {
         playClickSound();
@@ -372,6 +360,7 @@
     }
 
     function loadGame() {
+        // Kept on Save 6 so it perfectly aligns with your phone's memory
         const savedData = localStorage.getItem('backyardFlockSave6');
         if (savedData) {
             const data = JSON.parse(savedData);
@@ -383,14 +372,21 @@
             generators.forEach((g, i) => { 
                 if (data.generators[i]) {
                     g.owned = data.generators[i].owned;
-                    g.autoOn = data.generators[i].autoOn || false;
                 }
             });
-            managers.forEach((m, i) => { if (data.managers[i]) m.bought = data.managers[i].bought; });
+            // Safely map saved managers by ID so index changes don't break the save
+            if (data.managers) {
+                data.managers.forEach(savedMgr => {
+                    const mgr = managers.find(m => m.id === savedMgr.id);
+                    if (mgr) {
+                        mgr.bought = savedMgr.bought;
+                    }
+                });
+            }
             
             calculateOfflineGains();
         }
-        gameSpeed = managers[13].bought ? 75 : 100; // Violet index is 13
+        gameSpeed = getManagerBought('m8') ? 75 : 100; // Violet
         setInterval(gameLoop, gameSpeed);
     }
 
@@ -431,9 +427,9 @@
 
     function getGlobalMultiplier() {
         let mult = 1;
-        if (managers[12].bought) mult *= 1.5; // Bertha
-        if (managers[15].bought) mult *= 3;   // Cranberry
-        if (managers[16].bought) mult *= 10;  // Clarabelle
+        if (getManagerBought('m7')) mult *= 1.5; // Bertha
+        if (getManagerBought('m10')) mult *= 3;   // Cranberry
+        if (getManagerBought('m11')) mult *= 10;  // Clarabelle
         return mult * getPrestigeMultiplier();
     }
 
@@ -442,12 +438,12 @@
         const globalMult = getGlobalMultiplier();
         generators.forEach((gen, index) => {
             let genMult = 1;
-            if (index === 0 && managers[0].bought) genMult *= 2; 
-            if (index === 1 && managers[1].bought) genMult *= 2; 
-            if (index === 2 && managers[2].bought) genMult *= 2; 
-            if (index === 3 && managers[3].bought) genMult *= 2; 
-            if (index === 4 && managers[4].bought) genMult *= 2; 
-            if (index === 5 && managers[5].bought) genMult *= 2; 
+            if (index === 0 && getManagerBought('m1')) genMult *= 2; 
+            if (index === 1 && getManagerBought('m2')) genMult *= 2; 
+            if (index === 2 && getManagerBought('m3')) genMult *= 2; 
+            if (index === 3 && getManagerBought('m4')) genMult *= 2; 
+            if (index === 4 && getManagerBought('m5')) genMult *= 2; 
+            if (index === 5 && getManagerBought('m6')) genMult *= 2; 
             eps += (gen.owned * gen.baseProd * genMult * globalMult);
         });
         return eps;
@@ -456,7 +452,7 @@
     function manualClick() {
         playClickSound();
         let clickVal = 1 * getGlobalMultiplier();
-        if (managers[14].bought) clickVal *= 100; // Marianne
+        if (getManagerBought('m9')) clickVal *= 100; // Marianne
         eggs += clickVal;
         lifetimeEggs += clickVal;
         updateUI();
@@ -486,11 +482,6 @@
         }
     }
 
-    function toggleAutoBuy(index) {
-        playClickSound();
-        generators[index].autoOn = !generators[index].autoOn;
-    }
-
     function calculatePendingGoldenEggs() {
         const totalEarnable = Math.floor(Math.sqrt(lifetimeEggs / 100));
         return Math.max(0, totalEarnable - goldenEggs);
@@ -502,7 +493,7 @@
         if (pending > 0 && confirm(`Are you sure you want to restart? You will lose buildings and managers, but gain ${pending} Golden Eggs.`)) {
             goldenEggs += pending;
             eggs = 0;
-            generators.forEach(g => { g.owned = 0; g.autoOn = false; });
+            generators.forEach(g => { g.owned = 0; });
             managers.forEach(m => m.bought = false);
             renderGenerators();
             renderManagers();
@@ -526,18 +517,11 @@
         
         container.innerHTML = '';
         generators.forEach((gen, index) => {
-            const autoBuyerManager = managers.find(m => m.isAuto && m.targetGen === index);
-            const autoUnlocked = autoBuyerManager && autoBuyerManager.bought;
-            
             container.innerHTML += `
                 <div class="list-item">
                     <div class="info">
                         <h3>${gen.name} (${gen.owned})</h3>
                         <div class="stats">Base: +${format(gen.baseProd)}/s</div>
-                        ${autoUnlocked ? `
-                        <div class="auto-buy-toggle">
-                            <label><input type="checkbox" onchange="toggleAutoBuy(${index})" ${gen.autoOn ? 'checked' : ''}> Auto-buy</label>
-                        </div>` : ''}
                     </div>
                     <button class="buy-btn" id="btn-gen-${index}" onclick="buyGenerator(${index})">
                         ${format(getBatchCost(gen, buyQty))}
@@ -597,21 +581,7 @@
         });
     }
 
-    function runAutoBuyers() {
-        generators.forEach((gen) => {
-            if (gen.autoOn) {
-                const cost = getBatchCost(gen, 1);
-                if (eggs >= cost) {
-                    eggs -= cost;
-                    gen.owned += 1;
-                    renderGenerators();
-                }
-            }
-        });
-    }
-
     function gameLoop() {
-        runAutoBuyers();
         const production = getEPS() / 10;
         eggs += production;
         lifetimeEggs += production;
