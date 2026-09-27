@@ -44,7 +44,6 @@
             position: relative;
         }
         
-        /* Sticky Header */
         .header {
             text-align: center;
             background: var(--surface);
@@ -71,39 +70,47 @@
             font-size: 1em;
         }
         
-        /* Multi-Buy Sub-bar */
         .sub-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
             background: #1a1a1a;
-            padding: 8px 15px;
+            padding: 8px 12px;
             border-bottom: 1px solid #333;
             flex-shrink: 0;
+            gap: 8px;
         }
         .manual-gather-btn {
             background-color: var(--primary);
             color: #000;
             border: none;
-            padding: 8px 16px;
-            font-size: 0.95em;
+            padding: 8px 14px;
+            font-size: 0.9em;
             border-radius: 20px;
             cursor: pointer;
             font-weight: bold;
             touch-action: manipulation;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
         .manual-gather-btn:active { transform: scale(0.95); }
 
-        .buy-pills { display: flex; gap: 4px; }
+        .buy-pills { 
+            display: flex; 
+            gap: 4px; 
+            overflow-x: auto; 
+            padding: 2px 0;
+        }
         .pill-btn {
             background: #2a2a2a;
             color: var(--text-muted);
             border: 1px solid #444;
-            padding: 6px 10px;
-            border-radius: 14px;
-            font-size: 0.8em;
+            padding: 5px 8px;
+            border-radius: 12px;
+            font-size: 0.75em;
             font-weight: bold;
             cursor: pointer;
+            white-space: nowrap;
         }
         .pill-btn.active {
             background: var(--primary);
@@ -111,7 +118,6 @@
             border-color: var(--primary);
         }
 
-        /* Tabs */
         .tabs {
             display: flex;
             background: var(--surface);
@@ -136,7 +142,6 @@
             background: rgba(243, 156, 18, 0.05);
         }
 
-        /* Scrollable Tab Area */
         .tab-content {
             display: none;
             flex: 1;
@@ -146,7 +151,6 @@
         }
         .tab-content.active { display: block; }
 
-        /* Generator Card (AdCap Style) */
         .gen-card {
             background-color: var(--surface);
             margin-bottom: 12px;
@@ -174,7 +178,7 @@
         .gen-progress-box {
             flex: 1;
             background: var(--progress-bg);
-            height: 38px;
+            height: 40px;
             border-radius: 8px;
             position: relative;
             overflow: hidden;
@@ -188,7 +192,6 @@
             position: absolute;
             top: 0; left: 0; height: 100%; width: 0%;
             background: linear-gradient(90deg, #d35400, #f39c12);
-            transition: width 0.05s linear;
         }
         .gen-progress-text {
             position: relative;
@@ -197,18 +200,20 @@
             font-weight: bold;
             text-shadow: 0 1px 3px rgba(0,0,0,0.8);
             pointer-events: none;
+            text-align: center;
+            padding: 0 4px;
         }
 
         .buy-btn {
             background-color: #272727;
             color: #fff;
             border: 1px solid var(--primary);
-            padding: 10px 12px;
+            padding: 8px 10px;
             border-radius: 8px;
             cursor: pointer;
             font-weight: bold;
             font-size: 0.85em;
-            min-width: 120px;
+            min-width: 125px;
             text-align: right;
             display: flex;
             flex-direction: column;
@@ -218,9 +223,8 @@
         }
         .buy-btn:disabled { border-color: #444; color: #666; cursor: not-allowed; background-color: #1a1a1a; }
         .buy-btn:hover:not(:disabled) { filter: brightness(1.15); }
-        .buy-btn-qty { font-size: 0.75em; color: var(--text-muted); font-weight: normal; }
+        .buy-btn-qty { font-size: 0.75em; color: var(--text-muted); font-weight: normal; margin-top: 2px; }
 
-        /* Generic List Items (Managers, Upgrades, Prestige) */
         .list-item {
             background-color: var(--surface);
             margin-bottom: 10px;
@@ -251,7 +255,6 @@
             align-items: center;
         }
 
-        /* Hard Reset Danger Zone */
         .danger-box {
             border-left-color: var(--danger) !important;
             margin-top: 30px;
@@ -273,7 +276,6 @@
             color: #fff !important;
         }
 
-        /* Particle Confetti */
         .confetti-particle {
             position: fixed;
             pointer-events: none;
@@ -284,7 +286,6 @@
             transition: transform 0.8s cubic-bezier(0.1, 0.8, 0.3, 1), opacity 0.8s ease-out;
         }
 
-        /* Offline Modal */
         #offline-modal {
             display: none;
             position: fixed;
@@ -329,7 +330,6 @@
         <div id="eps">Est: 0 eggs / sec</div>
     </div>
 
-    <!-- Pinned Sub-Bar -->
     <div class="sub-bar">
         <button class="manual-gather-btn" onclick="manualClick(event)">🥚 Gather Egg</button>
         <div class="buy-pills">
@@ -337,10 +337,11 @@
             <button class="pill-btn" id="pill-5" onclick="setBuyQty(5)">x5</button>
             <button class="pill-btn" id="pill-10" onclick="setBuyQty(10)">x10</button>
             <button class="pill-btn" id="pill-100" onclick="setBuyQty(100)">x100</button>
+            <button class="pill-btn" id="pill-next" onclick="setBuyQty('next')">Next</button>
+            <button class="pill-btn" id="pill-max" onclick="setBuyQty('max')">Max</button>
         </div>
     </div>
 
-    <!-- 4 Navigation Tabs -->
     <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('generators')">Generators</button>
         <button class="tab-btn" onclick="switchTab('upgrades')">Upgrades</button>
@@ -348,22 +349,18 @@
         <button class="tab-btn" onclick="switchTab('prestige')">Prestige</button>
     </div>
 
-    <!-- TAB 1: GENERATORS -->
     <div id="tab-generators" class="tab-content active">
         <div id="upgrades-container"></div>
     </div>
 
-    <!-- TAB 2: UPGRADES -->
     <div id="tab-upgrades" class="tab-content">
         <div id="upgrades-list"></div>
     </div>
 
-    <!-- TAB 3: MANAGERS -->
     <div id="tab-managers" class="tab-content">
         <div id="managers-container"></div>
     </div>
 
-    <!-- TAB 4: PRESTIGE -->
     <div id="tab-prestige" class="tab-content">
         <div class="list-item prestige-box">
             <div class="info">
@@ -386,7 +383,6 @@
             <span id="lifetime-display" style="font-size:1.2em; color:#fff; font-weight:bold;">0</span>
         </div>
 
-        <!-- Danger Zone: Complete Hard Reset -->
         <div class="list-item prestige-box danger-box">
             <div class="info">
                 <h3 style="color: var(--danger);">Hard Reset (New Game)</h3>
@@ -409,7 +405,6 @@
 </div>
 
 <script>
-    // --- Audio System ---
     let audioCtx = null;
     let musicPlaying = false;
 
@@ -466,7 +461,6 @@
         }
     }
 
-    // --- Particle Confetti Effect ---
     function triggerConfetti(x, y) {
         const colors = ['#f39c12', '#f1c40f', '#2ecc71', '#e74c3c', '#9b59b6', '#3498db'];
         for (let i = 0; i < 22; i++) {
@@ -491,7 +485,6 @@
         }
     }
 
-    // --- Number Formatting (Full Word Notation) ---
     const WORD_POWERS = [
         { val: 1e33, word: "Decillion" },
         { val: 1e30, word: "Nonillion" },
@@ -526,7 +519,6 @@
         return `${mins}m ${secs}s`;
     }
 
-    // --- State & Balancing ---
     let eggs = 0;
     let lifetimeEggs = 0; 
     let goldenEggs = 0; 
@@ -608,7 +600,6 @@
         { id: 'u_f_m3', name: 'Automated Sorting Plant', targetGen: 5, type: 'mult', value: 10, cost: 62500000000, desc: 'Farm production x10', bought: false }
     ];
 
-    // --- Math & Calculation Engine ---
     function getPrestigeMultiplier() { 
         return 1 + (goldenEggs * 0.10); 
     }
@@ -660,7 +651,7 @@
         if (owned < 100) return 100;
         if (owned < 200) return 200;
         if (owned < 300) return 300;
-        return owned + 100;
+        return (Math.floor(owned / 100) + 1) * 100;
     }
 
     function getCycleTime(gen) {
@@ -678,10 +669,34 @@
     }
 
     function getBatchCost(gen, genIndex, amount) {
+        if (amount <= 0) return 0;
         const discountedBase = gen.baseCost * getGenDiscount(genIndex);
         const currentCost = discountedBase * Math.pow(COST_MULTIPLIER, gen.owned);
         if (amount === 1) return currentCost;
         return currentCost * ((Math.pow(COST_MULTIPLIER, amount) - 1) / (COST_MULTIPLIER - 1));
+    }
+
+    // Dynamic resolution for x1, x5, x10, x100, Next, and Max
+    function getResolvedBuyQty(gen, genIndex) {
+        if (typeof buyQty === 'number') {
+            return buyQty;
+        }
+        if (buyQty === 'next') {
+            const nextMilestone = getNextMilestone(gen.owned);
+            return Math.max(1, nextMilestone - gen.owned);
+        }
+        if (buyQty === 'max') {
+            const discountedBase = gen.baseCost * getGenDiscount(genIndex);
+            const currentCost = discountedBase * Math.pow(COST_MULTIPLIER, gen.owned);
+            if (eggs < currentCost) return 1;
+            
+            let n = Math.floor(Math.log(1 + (eggs * (COST_MULTIPLIER - 1)) / currentCost) / Math.log(COST_MULTIPLIER));
+            while (n > 1 && getBatchCost(gen, genIndex, n) > eggs) {
+                n--;
+            }
+            return Math.max(1, n);
+        }
+        return 1;
     }
 
     function getEstimatedEPS() {
@@ -696,7 +711,6 @@
         return eps;
     }
 
-    // --- Actions ---
     function manualClick(e) {
         playClickSound();
         const marianne = managers.find(m => m.id === 'm9');
@@ -719,12 +733,13 @@
 
     function buyGenerator(index, e) {
         const gen = generators[index];
-        const cost = getBatchCost(gen, index, buyQty);
+        const qty = getResolvedBuyQty(gen, index);
+        const cost = getBatchCost(gen, index, qty);
         if (eggs >= cost) {
             playChimeSound();
             if (e) triggerConfetti(e.clientX, e.clientY);
             eggs -= cost;
-            gen.owned += buyQty;
+            gen.owned += qty;
             renderGenerators();
             updateUI();
         }
@@ -785,7 +800,6 @@
         if (tabId === 'managers') renderManagers();
     }
 
-    // --- Prestige Engine ---
     function calculatePendingGoldenEggs() {
         const totalEarnable = Math.floor(Math.sqrt(lifetimeEggs / 100));
         return Math.max(0, totalEarnable - goldenEggs);
@@ -815,14 +829,12 @@
         }
     }
 
-    // --- Hard Reset (Full Day 1 Wipe) ---
     function hardReset() {
         playClickSound();
         const confirm1 = confirm("WARNING: Are you sure you want to completely erase ALL progress? This will reset all Eggs, Golden Eggs, Upgrades, and Managers.");
         if (confirm1) {
             const confirm2 = confirm("FINAL WARNING: This is irreversible and wipes everything back to Day 1. Are you 100% sure?");
             if (confirm2) {
-                // Remove all save data across all prior versions
                 ['backyardFlockSave', 'backyardFlockSave2', 'backyardFlockSave3', 'backyardFlockSave4', 'backyardFlockSave5', 'backyardFlockSave6', 'backyardFlockSave7'].forEach(key => {
                     localStorage.removeItem(key);
                 });
@@ -831,7 +843,6 @@
         }
     }
 
-    // --- Save & Offline Processing ---
     function loadGame() {
         const savedData = localStorage.getItem('backyardFlockSave7');
         if (savedData) {
@@ -898,7 +909,6 @@
         updateUI();
     }
 
-    // --- Rendering Functions ---
     function renderGenerators() {
         const container = document.getElementById('upgrades-container');
         if (!container.parentElement.classList.contains('active')) return;
@@ -907,8 +917,9 @@
         generators.forEach((gen, index) => {
             const cycleTime = getCycleTime(gen);
             const payout = getCyclePayout(gen, index);
-            const cost = getBatchCost(gen, index, buyQty);
             const nextMilestone = getNextMilestone(gen.owned);
+            const qty = getResolvedBuyQty(gen, index);
+            const cost = getBatchCost(gen, index, qty);
 
             container.innerHTML += `
                 <div class="gen-card">
@@ -927,8 +938,8 @@
                             </div>
                         </div>
                         <button class="buy-btn" id="btn-gen-${index}" onclick="buyGenerator(${index}, event)">
-                            <span>${formatFullWords(cost)}</span>
-                            <span class="buy-btn-qty">Buy x${buyQty}</span>
+                            <span id="btn-cost-${index}">${formatFullWords(cost)}</span>
+                            <span class="buy-btn-qty" id="btn-qty-${index}">Buy x${formatFullWords(qty)}</span>
                         </button>
                     </div>
                 </div>
@@ -1000,10 +1011,20 @@
         document.getElementById('prestige-current-bonus').innerText = `${formatFullWords(goldenEggs)} Golden Eggs (+${formatFullWords(goldenEggs * 10)}% Production Bonus)`;
         document.getElementById('prestige-btn').disabled = (pendingGE <= 0);
 
+        // Dynamically update generator button values and quantities
         generators.forEach((gen, index) => {
             const btn = document.getElementById(`btn-gen-${index}`);
-            if (btn) btn.disabled = eggs < getBatchCost(gen, index, buyQty);
+            if (btn) {
+                const qty = getResolvedBuyQty(gen, index);
+                const cost = getBatchCost(gen, index, qty);
+                const costEl = document.getElementById(`btn-cost-${index}`);
+                const qtyEl = document.getElementById(`btn-qty-${index}`);
+                if (costEl) costEl.innerText = formatFullWords(cost);
+                if (qtyEl) qtyEl.innerText = `Buy x${formatFullWords(qty)}`;
+                btn.disabled = eggs < cost;
+            }
         });
+
         upgrades.forEach((upg, index) => {
             const btn = document.getElementById(`btn-upg-${index}`);
             if (btn) btn.disabled = eggs < upg.cost;
@@ -1014,7 +1035,6 @@
         });
     }
 
-    // --- Main Game Loop ---
     let lastTick = performance.now();
 
     function gameLoop(now) {
