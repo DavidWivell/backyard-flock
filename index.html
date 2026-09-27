@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Backyard Flock Empire</title>
+    <style>
+        :root {
+            --bg: #1e1e1e;
+            --surface: #2d2d2d;
+            --primary: #f39c12;
+            --prestige: #f1c40f;
+            --manager: #9b59b6;
+            --text: #ffffff;
+            --text-muted: #aaaaaa;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            user-select: none;
+            height: 100vh;
+            overflow: hidden; 
+        }
+        
+        #game-container { 
+            width: 100%; 
+            max-width: 500px; 
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            text-align: center;
+            background: var(--surface);
+            padding: 15px;
+            border-bottom: 3px solid #444;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            position: relative;
+        }
+        h1 { margin: 0 0 5px 0; color: var(--primary); font-size: 1.5em; }
+        #egg-count { font-size: 2em; font-weight: bold; }
+        #eps { color: var(--text-muted); font-size: 1em; }
+        
+        #golden-egg-count { 
+            color: var(--prestige); 
+            font-weight: bold; 
+            font-size: 1.1em;
+            margin-top: 8px; 
+            display: none; 
+            background: #332a00;
+            padding: 5px;
+            border-radius: 6px;
+            border: 1px solid var(--prestige);
+        }
+
+        #music-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #444;
+            border: none;
+            color: white;
+            padding: 8px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2em;
+        }
+        
+        .main-button-container {
+            padding: 15px;
+        }
+        .main-button {
+            background-color: var(--primary);
+            color: #fff;
+            border: none;
+            padding: 15px;
+            font-size: 1.5em;
+            border-radius: 50px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: bold;
+            touch-action: manipulation;
+        }
+        .main-button:active { transform: scale(0.95); }
+
+        .tabs {
+            display: flex;
+            background: var(--surface);
+            border-bottom: 2px solid #444;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 15px 0;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-weight: bold;
+            font-size: 1.1em;
+            cursor: pointer;
+        }
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom: 3px solid var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+        .tab-content.active { display: block; }
+
+        .list-item {
+            background-color: var(--surface);
+            margin-bottom: 10px;
+            padding: 12px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 5px solid var(--primary);
+        }
+        .list-item.manager { border-left-color: var(--manager); }
+        .list-item.prestige-box { border-left-color: var(--prestige); flex-direction: column; text-align: center; }
+        
+        .info h3 { margin: 0 0 4px 0; font-size: 1em; }
+        .stats { color: var(--text-muted); font-size: 0.85em; }
+        
+        .buy-btn {
+            background-color: #333;
+            color: #fff;
+            border: 1px solid var(--primary);
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            min-width: 90px;
+        }
+        .buy-btn.mgr-btn { border-color: var(--manager); }
+        .buy-btn.prestige-btn { border-color: var(--prestige); background-color: #332a00; color: var(--prestige); width: 100%; margin-top: 10px; padding: 15px; font-size: 1.1em; }
+        .buy-btn:disabled { border-color: #555; color: #777; cursor: not-allowed; background-color: #222; }
+        
+        .multi-buy-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            background: var(--surface);
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .auto-buy-toggle {
+            margin-top: 5px;
+            font-size: 0.8em;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+        }
+
+        /* Offline Modal */
+        #offline-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: var(--surface);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            border: 2px solid var(--primary);
+            width: 80%;
+            max-width: 300px;
+        }
+        .modal-content button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            margin-top: 15px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <audio id="bgm" loop>
+        <source src="bgm.mp3" type="audio/mpeg">
+    </audio>
+
+    <div class="header">
+        <button id="music-btn" onclick="toggleMusic()">🔇</button>
+        <h1>Backyard Flock</h1>
+        <div id="egg-count">0 Eggs</div>
+        <div id="eps">0 eggs / sec</div>
+        <div id="golden-egg-count">0 Golden Eggs (+0% Bonus)</div>
+    </div>
+
+    <div class="main-button-container">
+        <button class="main-button" onclick="manualClick()">🥚 Gather Egg</button>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('generators')">Generators</button>
+        <button class="tab-btn" onclick="switchTab('managers')">Managers</button>
+        <button class="tab-btn" onclick="switchTab('prestige')">Prestige</button>
+    </div>
+
+    <!-- TAB 1: GENERATORS -->
+    <div id="tab-generators" class="tab-content active">
+        <div class="multi-buy-bar">
+            <span style="font-weight:bold;">Purchase Quantity:</span>
+            <button class="buy-btn" id="buy-qty-btn" onclick="toggleBuyQty()">x1</button>
+        </div>
+        <div id="upgrades-container"></div>
+    </div>
+
+    <!-- TAB 2: MANAGERS -->
+    <div id="tab-managers" class="tab-content">
+        <div id="managers-container"></div>
+    </div>
+
+    <!-- TAB 3: PRESTIGE -->
+    <div id="tab-prestige" class="tab-content">
+        <div class="list-item prestige-box">
+            <div class="info">
+                <h3>Claim Golden Eggs</h3>
+                <div class="stats">Reset current progress to attract Golden Eggs. Each Golden Egg provides a permanent +10% boost.</div>
+                <div class="stats" style="margin-top:8px; font-weight:bold; color: var(--prestige);" id="prestige-preview">Golden Eggs to Claim: 0</div>
+            </div>
+            <button class="buy-btn prestige-btn" id="prestige-btn" onclick="prestige()" disabled>Claim & Restart</button>
+        </div>
+        <div class="stats" style="text-align: center; margin-top: 20px;">
+            Total Lifetime Eggs Produced: <br><span id="lifetime-display" style="font-size:1.2em; color:#fff;">0</span>
+        </div>
+    </div>
+</div>
+
+<!-- Offline Modal -->
+<div id="offline-modal">
+    <div class="modal-content">
+        <h2 style="color: var(--primary); margin-top:0;">Welcome Back!</h2>
+        <p>While you were away, your flock kept working hard.</p>
+        <p style="font-size: 1.5em; font-weight: bold; margin: 10px 0;" id="offline-eggs-earned">0 Eggs</p>
+        <button onclick="closeOfflineModal()">Awesome!</button>
+    </div>
+</div>
+
+<script>
+    // --- Audio System ---
+    let audioCtx = null;
+    let musicPlaying = false;
+
+    function playClickSound() {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.1);
+        
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+        
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.1);
+    }
+
+    function toggleMusic() {
+        playClickSound();
+        const bgm = document.getElementById('bgm');
+        const btn = document.getElementById('music-btn');
+        if (musicPlaying) {
+            bgm.pause();
+            btn.innerText = "🔇";
+            musicPlaying = false;
+        } else {
+            bgm.play().catch(e => console.log("Music play blocked, ensure file exists."));
+            btn.innerText = "🔊";
+            musicPlaying = true;
+        }
+    }
+
+    // --- State ---
+    let eggs = 0;
+    let lifetimeEggs = 0; 
+    let goldenEggs = 0; 
+    let gameSpeed = 100;
+    let lastSaveTime = Date.now();
+    let buyQty = 1; 
+    
+    const COST_MULTIPLIER = 1.15;
+
+    let generators = [
+        { id: 'chick', name: 'Chick', baseCost: 10, baseProd: 1, owned: 0, autoOn: false },
+        { id: 'coop', name: 'Backyard Coop', baseCost: 100, baseProd: 10, owned: 0, autoOn: false },
+        { id: 'enclosure', name: 'Walk-in Enclosure', baseCost: 1200, baseProd: 100, owned: 0, autoOn: false },
+        { id: 'paddock', name: 'Solar-Fenced Paddock', baseCost: 15000, baseProd: 800, owned: 0, autoOn: false },
+        { id: 'barn', name: 'Free-Range Barn', baseCost: 200000, baseProd: 6500, owned: 0, autoOn: false },
+        { id: 'farm', name: 'Commercial Farm', baseCost: 2500000, baseProd: 50000, owned: 0, autoOn: false }
+    ];
+
+    let managers = [
+        // Production Multipliers
+        { id: 'm1', name: 'Annie', cost: 5000, desc: 'Chick production x2', bought: false, isAuto: false },
+        { id: 'm2', name: 'Lunae', cost: 50000, desc: 'Coop production x2', bought: false, isAuto: false },
+        { id: 'm3', name: 'Cleo', cost: 500000, desc: 'Enclosure production x2', bought: false, isAuto: false },
+        { id: 'm4', name: 'Myel', cost: 5000000, desc: 'Paddock production x2', bought: false, isAuto: false },
+        { id: 'm5', name: 'CoCo', cost: 50000000, desc: 'Barn production x2', bought: false, isAuto: false },
+        { id: 'm6', name: 'Rhiannon', cost: 500000000, desc: 'Farm production x2', bought: false, isAuto: false },
+        
+        // Auto-Buyers (Cost = Generator Base Cost * 1000)
+        { id: 'ab1', name: 'Chick Auto-Buyer', cost: 10000, desc: 'Unlocks Chick Auto-Buy toggle', bought: false, isAuto: true, targetGen: 0 },
+        { id: 'ab2', name: 'Coop Auto-Buyer', cost: 100000, desc: 'Unlocks Coop Auto-Buy toggle', bought: false, isAuto: true, targetGen: 1 },
+        { id: 'ab3', name: 'Enclosure Auto-Buyer', cost: 1200000, desc: 'Unlocks Enclosure Auto-Buy toggle', bought: false, isAuto: true, targetGen: 2 },
+        { id: 'ab4', name: 'Paddock Auto-Buyer', cost: 15000000, desc: 'Unlocks Paddock Auto-Buy toggle', bought: false, isAuto: true, targetGen: 3 },
+        { id: 'ab5', name: 'Barn Auto-Buyer', cost: 200000000, desc: 'Unlocks Barn Auto-Buy toggle', bought: false, isAuto: true, targetGen: 4 },
+        { id: 'ab6', name: 'Farm Auto-Buyer', cost: 2500000000, desc: 'Unlocks Farm Auto-Buy toggle', bought: false, isAuto: true, targetGen: 5 },
+        
+        // Global
+        { id: 'm7', name: 'Bertha', cost: 1000000000, desc: 'Global Egg production +50%', bought: false, isAuto: false },
+        { id: 'm8', name: 'Violet', cost: 10000000000, desc: 'Game runs 25% faster', bought: false, isAuto: false },
+        { id: 'm9', name: 'Marianne', cost: 50000000000, desc: 'Manual clicks yield 100x eggs', bought: false, isAuto: false },
+        { id: 'm10', name: 'Cranberry', cost: 500000000000, desc: 'Global Egg production +200%', bought: false, isAuto: false },
+        { id: 'm11', name: 'Clarabelle', cost: 5000000000000, desc: 'Global Egg production x10', bought: false, isAuto: false }
+    ];
+
+    function switchTab(tabId) {
+        playClickSound();
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        
+        document.getElementById(`tab-${tabId}`).classList.add('active');
+        event.currentTarget.classList.add('active');
+        renderGenerators();
+        renderManagers();
+    }
+
+    function toggleBuyQty() {
+        playClickSound();
+        if (buyQty === 1) buyQty = 5;
+        else if (buyQty === 5) buyQty = 10;
+        else if (buyQty === 10) buyQty = 100;
+        else buyQty = 1;
+        
+        document.getElementById('buy-qty-btn').innerText = `x${buyQty}`;
+        renderGenerators();
+        updateUI();
+    }
+
+    function loadGame() {
+        const savedData = localStorage.getItem('backyardFlockSave6');
+        if (savedData) {
+            const data = JSON.parse(savedData);
+            eggs = data.eggs || 0;
+            lifetimeEggs = data.lifetimeEggs || 0;
+            goldenEggs = data.goldenEggs || 0;
+            lastSaveTime = data.lastSaveTime || Date.now();
+            
+            generators.forEach((g, i) => { 
+                if (data.generators[i]) {
+                    g.owned = data.generators[i].owned;
+                    g.autoOn = data.generators[i].autoOn || false;
+                }
+            });
+            managers.forEach((m, i) => { if (data.managers[i]) m.bought = data.managers[i].bought; });
+            
+            calculateOfflineGains();
+        }
+        gameSpeed = managers[13].bought ? 75 : 100; // Violet index is 13
+        setInterval(gameLoop, gameSpeed);
+    }
+
+    function saveGame() {
+        lastSaveTime = Date.now();
+        localStorage.setItem('backyardFlockSave6', JSON.stringify({ 
+            eggs, lifetimeEggs, goldenEggs, generators, managers, lastSaveTime 
+        }));
+    }
+
+    function calculateOfflineGains() {
+        const now = Date.now();
+        const diffSeconds = (now - lastSaveTime) / 1000;
+        if (diffSeconds > 60) { 
+            const offlineGains = getEPS() * diffSeconds;
+            if (offlineGains > 0) {
+                eggs += offlineGains;
+                lifetimeEggs += offlineGains;
+                document.getElementById('offline-eggs-earned').innerText = format(offlineGains) + " Eggs";
+                document.getElementById('offline-modal').style.display = 'flex';
+            }
+        }
+    }
+
+    function closeOfflineModal() {
+        playClickSound();
+        document.getElementById('offline-modal').style.display = 'none';
+        updateUI();
+    }
+
+    function getBatchCost(gen, amount) {
+        const currentCost = gen.baseCost * Math.pow(COST_MULTIPLIER, gen.owned);
+        if (amount === 1) return currentCost;
+        return currentCost * ((Math.pow(COST_MULTIPLIER, amount) - 1) / (COST_MULTIPLIER - 1));
+    }
+
+    function getPrestigeMultiplier() { return 1 + (goldenEggs * 0.10); }
+
+    function getGlobalMultiplier() {
+        let mult = 1;
+        if (managers[12].bought) mult *= 1.5; // Bertha
+        if (managers[15].bought) mult *= 3;   // Cranberry
+        if (managers[16].bought) mult *= 10;  // Clarabelle
+        return mult * getPrestigeMultiplier();
+    }
+
+    function getEPS() {
+        let eps = 0;
+        const globalMult = getGlobalMultiplier();
+        generators.forEach((gen, index) => {
+            let genMult = 1;
+            if (index === 0 && managers[0].bought) genMult *= 2; 
+            if (index === 1 && managers[1].bought) genMult *= 2; 
+            if (index === 2 && managers[2].bought) genMult *= 2; 
+            if (index === 3 && managers[3].bought) genMult *= 2; 
+            if (index === 4 && managers[4].bought) genMult *= 2; 
+            if (index === 5 && managers[5].bought) genMult *= 2; 
+            eps += (gen.owned * gen.baseProd * genMult * globalMult);
+        });
+        return eps;
+    }
+
+    function manualClick() {
+        playClickSound();
+        let clickVal = 1 * getGlobalMultiplier();
+        if (managers[14].bought) clickVal *= 100; // Marianne
+        eggs += clickVal;
+        lifetimeEggs += clickVal;
+        updateUI();
+    }
+
+    function buyGenerator(index) {
+        playClickSound();
+        const gen = generators[index];
+        const cost = getBatchCost(gen, buyQty);
+        if (eggs >= cost) {
+            eggs -= cost;
+            gen.owned += buyQty;
+            renderGenerators();
+            updateUI();
+        }
+    }
+
+    function buyManager(index) {
+        playClickSound();
+        const mgr = managers[index];
+        if (eggs >= mgr.cost && !mgr.bought) {
+            eggs -= mgr.cost;
+            mgr.bought = true;
+            renderManagers();
+            renderGenerators(); 
+            updateUI();
+        }
+    }
+
+    function toggleAutoBuy(index) {
+        playClickSound();
+        generators[index].autoOn = !generators[index].autoOn;
+    }
+
+    function calculatePendingGoldenEggs() {
+        const totalEarnable = Math.floor(Math.sqrt(lifetimeEggs / 100));
+        return Math.max(0, totalEarnable - goldenEggs);
+    }
+
+    function prestige() {
+        playClickSound();
+        const pending = calculatePendingGoldenEggs();
+        if (pending > 0 && confirm(`Are you sure you want to restart? You will lose buildings and managers, but gain ${pending} Golden Eggs.`)) {
+            goldenEggs += pending;
+            eggs = 0;
+            generators.forEach(g => { g.owned = 0; g.autoOn = false; });
+            managers.forEach(m => m.bought = false);
+            renderGenerators();
+            renderManagers();
+            saveGame();
+            updateUI();
+        }
+    }
+
+    function format(num) {
+        if (num < 1000) return Math.floor(num).toString();
+        const suffixes = ["", "k", "M", "B", "T", "Qa", "Qi", "Sx"];
+        const suffixNum = Math.floor(("" + Math.floor(num)).length / 3);
+        let shortValue = parseFloat((suffixNum != 0 ? (num / Math.pow(1000, suffixNum)) : num).toPrecision(3));
+        if (shortValue % 1 != 0) shortValue = shortValue.toFixed(1);
+        return shortValue + suffixes[suffixNum];
+    }
+
+    function renderGenerators() {
+        const container = document.getElementById('upgrades-container');
+        if (!container.parentElement.classList.contains('active')) return;
+        
+        container.innerHTML = '';
+        generators.forEach((gen, index) => {
+            const autoBuyerManager = managers.find(m => m.isAuto && m.targetGen === index);
+            const autoUnlocked = autoBuyerManager && autoBuyerManager.bought;
+            
+            container.innerHTML += `
+                <div class="list-item">
+                    <div class="info">
+                        <h3>${gen.name} (${gen.owned})</h3>
+                        <div class="stats">Base: +${format(gen.baseProd)}/s</div>
+                        ${autoUnlocked ? `
+                        <div class="auto-buy-toggle">
+                            <label><input type="checkbox" onchange="toggleAutoBuy(${index})" ${gen.autoOn ? 'checked' : ''}> Auto-buy</label>
+                        </div>` : ''}
+                    </div>
+                    <button class="buy-btn" id="btn-gen-${index}" onclick="buyGenerator(${index})">
+                        ${format(getBatchCost(gen, buyQty))}
+                    </button>
+                </div>
+            `;
+        });
+    }
+
+    function renderManagers() {
+        const container = document.getElementById('managers-container');
+        if (!container.parentElement.classList.contains('active')) return;
+        
+        container.innerHTML = '';
+        managers.forEach((mgr, index) => {
+            if (!mgr.bought) {
+                container.innerHTML += `
+                    <div class="list-item manager">
+                        <div class="info">
+                            <h3>${mgr.name}</h3>
+                            <div class="stats">${mgr.desc}</div>
+                        </div>
+                        <button class="buy-btn mgr-btn" id="btn-mgr-${index}" onclick="buyManager(${index})">
+                            ${format(mgr.cost)}
+                        </button>
+                    </div>
+                `;
+            }
+        });
+        if (container.innerHTML === '') container.innerHTML = '<div class="stats" style="text-align:center;">All managers hired!</div>';
+    }
+
+    function updateUI() {
+        document.getElementById('egg-count').innerText = format(eggs) + ' Eggs';
+        const speedMultiplier = 100 / gameSpeed; 
+        document.getElementById('eps').innerText = format(getEPS() * speedMultiplier) + ' eggs / sec';
+        
+        if (goldenEggs > 0) {
+            const geDiv = document.getElementById('golden-egg-count');
+            geDiv.style.display = 'inline-block';
+            geDiv.innerText = `${format(goldenEggs)} Golden Eggs (+${format(goldenEggs * 10)}% Bonus)`;
+        }
+
+        document.getElementById('lifetime-display').innerText = format(lifetimeEggs);
+        
+        const pendingGE = calculatePendingGoldenEggs();
+        document.getElementById('prestige-preview').innerText = `Golden Eggs to Claim: ${format(pendingGE)}`;
+        document.getElementById('prestige-btn').disabled = (pendingGE <= 0);
+
+        generators.forEach((gen, index) => {
+            const btn = document.getElementById(`btn-gen-${index}`);
+            if (btn) btn.disabled = eggs < getBatchCost(gen, buyQty);
+        });
+        managers.forEach((mgr, index) => {
+            const btn = document.getElementById(`btn-mgr-${index}`);
+            if (btn) btn.disabled = eggs < mgr.cost;
+        });
+    }
+
+    function runAutoBuyers() {
+        generators.forEach((gen) => {
+            if (gen.autoOn) {
+                const cost = getBatchCost(gen, 1);
+                if (eggs >= cost) {
+                    eggs -= cost;
+                    gen.owned += 1;
+                    renderGenerators();
+                }
+            }
+        });
+    }
+
+    function gameLoop() {
+        runAutoBuyers();
+        const production = getEPS() / 10;
+        eggs += production;
+        lifetimeEggs += production;
+        updateUI();
+    }
+
+    loadGame();
+    renderGenerators();
+    renderManagers();
+    updateUI();
+    setInterval(saveGame, 5000); 
+</script>
+</body>
+</html>
