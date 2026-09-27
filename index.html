@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Backyard Flock Empire</title>
+    <title>Empire Tycoon: Backyard Flock & Equine Estate</title>
     <style>
         :root {
             --bg: #141414;
@@ -20,6 +20,14 @@
             --text-muted: #999999;
             --progress-bg: #333333;
         }
+
+        body.theme-equine {
+            --primary: #3498db;
+            --prestige: #e67e22;
+            --manager: #1abc9c;
+            --upgrade: #e91e63;
+        }
+
         * { box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -47,77 +55,109 @@
         .header {
             text-align: center;
             background: var(--surface);
-            padding: 12px 15px;
+            padding: 10px 15px;
             border-bottom: 2px solid #333;
             box-shadow: 0 4px 10px rgba(0,0,0,0.6);
             position: relative;
             flex-shrink: 0;
         }
-        h1 { margin: 0 0 4px 0; color: var(--primary); font-size: 1.35em; letter-spacing: 0.5px; }
-        #egg-count { font-size: 1.85em; font-weight: bold; color: #fff; }
-        #eps { color: var(--text-muted); font-size: 0.9em; margin-top: 2px; }
+        h1 { margin: 0 0 2px 0; color: var(--primary); font-size: 1.3em; letter-spacing: 0.5px; }
+        #currency-count { font-size: 1.85em; font-weight: bold; color: #fff; }
+        #eps { color: var(--text-muted); font-size: 0.85em; margin-top: 2px; }
 
-        #music-btn {
+        .header-controls {
             position: absolute;
-            top: 12px;
-            right: 15px;
+            top: 10px;
+            right: 12px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .icon-ctrl-btn {
             background: #333;
             border: 1px solid #555;
             color: white;
             padding: 6px 10px;
             border-radius: 50%;
             cursor: pointer;
-            font-size: 1em;
+            font-size: 0.95em;
         }
-        
+
+        /* Boost Banner */
+        .boost-bar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #1c1808;
+            border-bottom: 1px solid #4a3d0f;
+            padding: 5px 10px;
+            flex-shrink: 0;
+        }
+        .boost-btn {
+            background: #272007;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            font-weight: bold;
+            font-size: 0.85em;
+            padding: 6px 14px;
+            border-radius: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .boost-btn.active {
+            background: var(--primary);
+            color: #000;
+            animation: pulse 1s infinite alternate;
+        }
+        @keyframes pulse {
+            from { transform: scale(0.98); }
+            to { transform: scale(1.02); }
+        }
+
+        /* Gather & Buy Toggles */
         .sub-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
             background: #1a1a1a;
-            padding: 8px 12px;
+            padding: 10px 15px;
             border-bottom: 1px solid #333;
             flex-shrink: 0;
-            gap: 8px;
+            gap: 12px;
         }
         .manual-gather-btn {
             background-color: var(--primary);
             color: #000;
             border: none;
-            padding: 8px 14px;
-            font-size: 0.9em;
-            border-radius: 20px;
+            padding: 14px 22px;
+            font-size: 1.1em;
+            border-radius: 28px;
             cursor: pointer;
             font-weight: bold;
             touch-action: manipulation;
             white-space: nowrap;
-            flex-shrink: 0;
+            flex: 1;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
         }
-        .manual-gather-btn:active { transform: scale(0.95); }
+        .manual-gather-btn:active { transform: scale(0.96); }
 
-        .buy-pills { 
-            display: flex; 
-            gap: 4px; 
-            overflow-x: auto; 
-            padding: 2px 0;
-        }
-        .pill-btn {
+        .buy-mode-btn {
             background: #2a2a2a;
-            color: var(--text-muted);
-            border: 1px solid #444;
-            padding: 5px 8px;
+            color: var(--primary);
+            border: 1.5px solid var(--primary);
+            padding: 12px 16px;
             border-radius: 12px;
-            font-size: 0.75em;
+            font-size: 0.9em;
             font-weight: bold;
             cursor: pointer;
             white-space: nowrap;
-        }
-        .pill-btn.active {
-            background: var(--primary);
-            color: #000;
-            border-color: var(--primary);
+            min-width: 95px;
+            text-align: center;
         }
 
+        /* Tabs with Dot Badges */
         .tabs {
             display: flex;
             background: var(--surface);
@@ -134,12 +174,24 @@
             font-size: 0.85em;
             cursor: pointer;
             text-align: center;
-            letter-spacing: 0.3px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
         }
         .tab-btn.active {
             color: var(--primary);
             border-bottom: 3px solid var(--primary);
-            background: rgba(243, 156, 18, 0.05);
+            background: rgba(255, 255, 255, 0.03);
+        }
+        .tab-badge {
+            width: 8px;
+            height: 8px;
+            background-color: #2ecc71;
+            border-radius: 50%;
+            display: none;
+            box-shadow: 0 0 6px #2ecc71;
         }
 
         .tab-content {
@@ -147,10 +199,11 @@
             flex: 1;
             overflow-y: auto;
             padding: 12px;
-            padding-bottom: 130px; 
+            padding-bottom: 140px; 
         }
         .tab-content.active { display: block; }
 
+        /* Generators Cards */
         .gen-card {
             background-color: var(--surface);
             margin-bottom: 12px;
@@ -178,7 +231,7 @@
         .gen-progress-box {
             flex: 1;
             background: var(--progress-bg);
-            height: 40px;
+            height: 42px;
             border-radius: 8px;
             position: relative;
             overflow: hidden;
@@ -193,12 +246,45 @@
             top: 0; left: 0; height: 100%; width: 0%;
             background: linear-gradient(90deg, #d35400, #f39c12);
         }
+        body.theme-equine .gen-progress-fill {
+            background: linear-gradient(90deg, #1f618d, #3498db);
+        }
+
+        /* Fast-Speed Barber-Pole Stream Animation */
+        .gen-progress-fill.fast-stream {
+            width: 100% !important;
+            background: repeating-linear-gradient(
+                45deg,
+                #f39c12,
+                #f39c12 12px,
+                #d35400 12px,
+                #d35400 24px
+            );
+            background-size: 34px 34px;
+            animation: barberpole 0.6s linear infinite;
+        }
+        body.theme-equine .gen-progress-fill.fast-stream {
+            background: repeating-linear-gradient(
+                45deg,
+                #3498db,
+                #3498db 12px,
+                #1f618d 12px,
+                #1f618d 24px
+            );
+            background-size: 34px 34px;
+            animation: barberpole 0.6s linear infinite;
+        }
+        @keyframes barberpole {
+            from { background-position: 0 0; }
+            to { background-position: 34px 0; }
+        }
+
         .gen-progress-text {
             position: relative;
             z-index: 2;
             font-size: 0.85em;
             font-weight: bold;
-            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+            text-shadow: 0 1px 3px rgba(0,0,0,0.85);
             pointer-events: none;
             text-align: center;
             padding: 0 4px;
@@ -271,9 +357,75 @@
             font-size: 0.95em;
             align-items: center !important;
         }
-        .danger-btn:hover {
-            background-color: var(--danger) !important;
-            color: #fff !important;
+
+        /* Floating Action Buttons */
+        .fab-container {
+            position: fixed;
+            bottom: 25px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 100;
+        }
+        .fab {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: var(--surface);
+            border: 2px solid var(--primary);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.35em;
+            cursor: pointer;
+            box-shadow: 0 6px 14px rgba(0,0,0,0.6);
+            touch-action: manipulation;
+        }
+        .fab:active { transform: scale(0.92); }
+
+        /* Modals */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+        }
+        .modal-box {
+            background: var(--surface);
+            padding: 20px;
+            border-radius: 12px;
+            border: 2px solid var(--primary);
+            width: 100%;
+            max-width: 380px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #333;
+            font-size: 0.85em;
+        }
+        .stats-row:last-child { border-bottom: none; }
+        .stats-rank { font-weight: bold; color: var(--primary); }
+        .modal-close-btn {
+            background: var(--primary);
+            color: #000;
+            border: none;
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-weight: bold;
+            cursor: pointer;
         }
 
         .confetti-particle {
@@ -285,38 +437,9 @@
             z-index: 9999;
             transition: transform 0.8s cubic-bezier(0.1, 0.8, 0.3, 1), opacity 0.8s ease-out;
         }
-
-        #offline-modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-        }
-        .modal-content {
-            background: var(--surface);
-            padding: 20px;
-            border-radius: 12px;
-            text-align: center;
-            border: 2px solid var(--primary);
-            width: 85%;
-            max-width: 320px;
-        }
-        .modal-content button {
-            background: var(--primary);
-            color: #000;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            margin-top: 15px;
-            font-weight: bold;
-            cursor: pointer;
-        }
     </style>
 </head>
-<body>
+<body class="theme-flock">
 
 <div id="game-container">
     <audio id="bgm" loop>
@@ -324,53 +447,72 @@
     </audio>
 
     <div class="header">
-        <button id="music-btn" onclick="toggleMusic()">🔇</button>
-        <h1>Backyard Flock</h1>
-        <div id="egg-count">0 Eggs</div>
+        <div class="header-controls">
+            <button class="icon-ctrl-btn" id="music-btn" onclick="toggleMusic()">🔇</button>
+        </div>
+        <h1 id="world-title">Backyard Flock</h1>
+        <div id="currency-count">0 Eggs</div>
         <div id="eps">Est: 0 eggs / sec</div>
     </div>
 
+    <!-- 2x Production Boost Bar -->
+    <div class="boost-bar">
+        <button class="boost-btn" id="boost-btn" onclick="activateBoost()">
+            <span id="boost-text">⚡ 2x Boost (Ready!)</span>
+        </button>
+    </div>
+
+    <!-- Gather Egg / Buy Pill Row -->
     <div class="sub-bar">
-        <button class="manual-gather-btn" onclick="manualClick(event)">🥚 Gather Egg</button>
-        <div class="buy-pills">
-            <button class="pill-btn active" id="pill-1" onclick="setBuyQty(1)">x1</button>
-            <button class="pill-btn" id="pill-5" onclick="setBuyQty(5)">x5</button>
-            <button class="pill-btn" id="pill-10" onclick="setBuyQty(10)">x10</button>
-            <button class="pill-btn" id="pill-100" onclick="setBuyQty(100)">x100</button>
-            <button class="pill-btn" id="pill-next" onclick="setBuyQty('next')">Next</button>
-            <button class="pill-btn" id="pill-max" onclick="setBuyQty('max')">Max</button>
-        </div>
+        <button class="manual-gather-btn" id="gather-btn" onclick="manualClick(event)">🥚 Gather Egg</button>
+        <button class="buy-mode-btn" id="buy-mode-btn" onclick="cycleBuyQty()">Buy: x1</button>
     </div>
 
+    <!-- 4 Navigation Tabs -->
     <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('generators')">Generators</button>
-        <button class="tab-btn" onclick="switchTab('upgrades')">Upgrades</button>
-        <button class="tab-btn" onclick="switchTab('managers')">Managers</button>
-        <button class="tab-btn" onclick="switchTab('prestige')">Prestige</button>
+        <button class="tab-btn active" id="tab-btn-generators" onclick="switchTab('generators')">
+            <span id="tab-label-gen">Generators</span>
+            <div class="tab-badge" id="badge-generators"></div>
+        </button>
+        <button class="tab-btn" id="tab-btn-upgrades" onclick="switchTab('upgrades')">
+            <span>Upgrades</span>
+            <div class="tab-badge" id="badge-upgrades"></div>
+        </button>
+        <button class="tab-btn" id="tab-btn-managers" onclick="switchTab('managers')">
+            <span>Managers</span>
+            <div class="tab-badge" id="badge-managers"></div>
+        </button>
+        <button class="tab-btn" id="tab-btn-prestige" onclick="switchTab('prestige')">
+            <span>Prestige</span>
+        </button>
     </div>
 
+    <!-- TAB 1: GENERATORS / FACILITIES -->
     <div id="tab-generators" class="tab-content active">
+        <div id="generators-container"></div>
+    </div>
+
+    <!-- TAB 2: UPGRADES -->
+    <div id="tab-upgrades" class="tab-content">
         <div id="upgrades-container"></div>
     </div>
 
-    <div id="tab-upgrades" class="tab-content">
-        <div id="upgrades-list"></div>
-    </div>
-
+    <!-- TAB 3: MANAGERS -->
     <div id="tab-managers" class="tab-content">
         <div id="managers-container"></div>
     </div>
 
+    <!-- TAB 4: PRESTIGE -->
     <div id="tab-prestige" class="tab-content">
         <div class="list-item prestige-box">
             <div class="info">
-                <h3>Claim Golden Eggs</h3>
-                <div class="stats" style="margin: 8px 0; color: var(--prestige); font-weight:bold; font-size:1.1em;" id="prestige-current-bonus">
-                    0 Golden Eggs (+0% Production Bonus)
+                <h3 id="prestige-title">Claim Golden Eggs</h3>
+                <div class="stats" style="margin: 8px 0; color: var(--prestige); font-weight:bold; font-size:1.05em;" id="prestige-current-bonus">
+                    0 Golden Eggs (+0% Bonus)
                 </div>
-                <div class="stats">Reset all progress to attract Golden Eggs. Each Golden Egg provides a permanent +10% boost to every generator.</div>
+                <div class="stats" id="prestige-desc">Reset flock progress to attract Golden Eggs. Each Golden Egg provides a permanent +10% boost.</div>
                 <div class="stats" style="margin-top:12px; font-weight:bold; color: var(--primary); font-size: 1.05em;" id="prestige-preview">
-                    Golden Eggs to Claim: 0
+                    Claimable: 0
                 </div>
             </div>
             <button class="buy-btn prestige-btn" id="prestige-btn" onclick="prestige(event)" disabled>
@@ -379,14 +521,15 @@
         </div>
 
         <div class="stats" style="text-align: center; margin-top: 25px;">
-            Total Lifetime Eggs Produced: <br>
+            <span id="lifetime-label">Total Lifetime Eggs Produced:</span><br>
             <span id="lifetime-display" style="font-size:1.2em; color:#fff; font-weight:bold;">0</span>
         </div>
 
+        <!-- Master Hard Reset -->
         <div class="list-item prestige-box danger-box">
             <div class="info">
                 <h3 style="color: var(--danger);">Hard Reset (New Game)</h3>
-                <div class="stats">Permanently wipe all save data, including Golden Eggs and Lifetime Eggs, as if you are opening the game for the first time.</div>
+                <div class="stats">Permanently wipe all save data across both the Backyard Flock and Equine Estate back to Day 1.</div>
             </div>
             <button class="buy-btn danger-btn" onclick="hardReset()">
                 Erase All Progress
@@ -395,16 +538,34 @@
     </div>
 </div>
 
-<div id="offline-modal">
-    <div class="modal-content">
+<!-- Floating Action Buttons -->
+<div class="fab-container">
+    <div class="fab" id="world-swap-fab" onclick="toggleWorld()" title="Switch World">🐴</div>
+    <div class="fab" onclick="openStatsModal()" title="Statistics">📊</div>
+</div>
+
+<!-- Statistics Modal -->
+<div class="modal-overlay" id="stats-modal">
+    <div class="modal-box">
+        <h2 style="color: var(--primary); margin-top:0; font-size:1.3em;" id="stats-modal-title">Flock Revenue Breakdown</h2>
+        <div class="stats" style="margin-bottom:12px;" id="stats-modal-eps">Total: 0 / sec</div>
+        <div id="stats-leaderboard"></div>
+        <button class="modal-close-btn" onclick="closeStatsModal()">Close</button>
+    </div>
+</div>
+
+<!-- Offline Gains Modal -->
+<div class="modal-overlay" id="offline-modal">
+    <div class="modal-box" style="text-align:center;">
         <h2 style="color: var(--primary); margin-top:0;">Welcome Back!</h2>
-        <p>While you were away, your flock kept laying eggs.</p>
-        <p style="font-size: 1.4em; font-weight: bold; margin: 10px 0; color: #fff;" id="offline-eggs-earned">0 Eggs</p>
-        <button onclick="closeOfflineModal()">Collect</button>
+        <p id="offline-desc">While you were away, your facilities kept working.</p>
+        <p style="font-size: 1.35em; font-weight: bold; margin: 12px 0; color: #fff;" id="offline-earned">0 Eggs</p>
+        <button class="modal-close-btn" onclick="closeOfflineModal()">Collect</button>
     </div>
 </div>
 
 <script>
+    // --- Audio System ---
     let audioCtx = null;
     let musicPlaying = false;
 
@@ -455,7 +616,7 @@
             btn.innerText = "🔇";
             musicPlaying = false;
         } else {
-            bgm.play().catch(e => console.log("Music file missing or playback blocked."));
+            bgm.play().catch(e => console.log("Audio play blocked."));
             btn.innerText = "🔊";
             musicPlaying = true;
         }
@@ -480,11 +641,11 @@
                 p.style.transform = `translate(${destX}px, ${destY}px) scale(0)`;
                 p.style.opacity = '0';
             });
-
             setTimeout(() => p.remove(), 850);
         }
     }
 
+    // --- Number Formatting ---
     const WORD_POWERS = [
         { val: 1e33, word: "Decillion" },
         { val: 1e30, word: "Nonillion" },
@@ -512,6 +673,7 @@
     }
 
     function formatTime(seconds) {
+        if (seconds < 0.20) return `Instant`;
         if (seconds < 1) return `${(seconds).toFixed(2)}s`;
         if (seconds < 60) return `${(seconds).toFixed(1)}s`;
         const mins = Math.floor(seconds / 60);
@@ -519,15 +681,60 @@
         return `${mins}m ${secs}s`;
     }
 
-    let eggs = 0;
-    let lifetimeEggs = 0; 
-    let goldenEggs = 0; 
-    let lastSaveTime = Date.now();
-    let buyQty = 1; 
-    
+    // --- Dual World Definitions ---
     const COST_MULTIPLIER = 1.15;
+    const BUY_MODES = [1, 5, 10, 100, 'next', 'max'];
+    let buyModeIndex = 0;
 
-    let generators = [
+    // Generator factory with 10 deep upgrade tiers
+    function createUpgradesForWorld(genDefs, currencyUnit) {
+        let upgs = [];
+        const discountTiers = [
+            { pct: 0.10, multCost: 25 },
+            { pct: 0.25, multCost: 250 },
+            { pct: 0.50, multCost: 5000 },
+            { pct: 0.75, multCost: 100000 }
+        ];
+        const multTiers = [
+            { factor: 2, multCost: 50 },
+            { factor: 5, multCost: 1000 },
+            { factor: 10, multCost: 25000 },
+            { factor: 20, multCost: 500000 },
+            { factor: 50, multCost: 15000000 },
+            { factor: 100, multCost: 500000000 }
+        ];
+
+        genDefs.forEach((g, gIdx) => {
+            discountTiers.forEach((d, dIdx) => {
+                upgs.push({
+                    id: `u_${g.id}_d_${dIdx}`,
+                    name: `${g.name} Efficiency Tier ${dIdx + 1}`,
+                    targetGen: gIdx,
+                    type: 'discount',
+                    value: d.pct,
+                    cost: g.baseCost * d.multCost,
+                    desc: `${g.name} costs ${(d.pct * 100).toFixed(0)}% less`,
+                    bought: false
+                });
+            });
+            multTiers.forEach((m, mIdx) => {
+                upgs.push({
+                    id: `u_${g.id}_m_${mIdx}`,
+                    name: `${g.name} Mastery Tier ${mIdx + 1}`,
+                    targetGen: gIdx,
+                    type: 'mult',
+                    value: m.factor,
+                    cost: g.baseCost * m.multCost,
+                    desc: `${g.name} production x${m.factor}`,
+                    bought: false
+                });
+            });
+        });
+        return upgs;
+    }
+
+    // World 1: Flock
+    const flockGenerators = [
         { id: 'chick', name: 'Chick', baseCost: 10, baseProd: 1, baseTime: 0.6, owned: 0, progress: 0, isRunning: false, automated: false },
         { id: 'coop', name: 'Backyard Coop', baseCost: 100, baseProd: 12, baseTime: 3.0, owned: 0, progress: 0, isRunning: false, automated: false },
         { id: 'enclosure', name: 'Walk-in Enclosure', baseCost: 1200, baseProd: 140, baseTime: 8.0, owned: 0, progress: 0, isRunning: false, automated: false },
@@ -536,88 +743,99 @@
         { id: 'farm', name: 'Commercial Farm', baseCost: 2500000, baseProd: 75000, baseTime: 384.0, owned: 0, progress: 0, isRunning: false, automated: false }
     ];
 
-    let managers = [
-        { id: 'm1', name: 'Annie', cost: 1000, desc: 'Automates Chick production', bought: false, targetGen: 0 },
-        { id: 'm2', name: 'Lunae', cost: 25000, desc: 'Automates Backyard Coop', bought: false, targetGen: 1 },
-        { id: 'm3', name: 'Cleo', cost: 500000, desc: 'Automates Walk-in Enclosure', bought: false, targetGen: 2 },
-        { id: 'm4', name: 'Myel', cost: 10000000, desc: 'Automates Solar-Fenced Paddock', bought: false, targetGen: 3 },
-        { id: 'm5', name: 'CoCo', cost: 250000000, desc: 'Automates Free-Range Barn', bought: false, targetGen: 4 },
-        { id: 'm6', name: 'Rhiannon', cost: 5000000000, desc: 'Automates Commercial Farm', bought: false, targetGen: 5 },
-        { id: 'm7', name: 'Bertha', cost: 50000000000, desc: 'Global Egg production +50%', bought: false, targetGen: -1 },
-        { id: 'm8', name: 'Violet', cost: 250000000000, desc: 'All cycles run 25% faster', bought: false, targetGen: -1 },
-        { id: 'm9', name: 'Marianne', cost: 1000000000000, desc: 'Gather Egg button yields x100', bought: false, targetGen: -1 },
-        { id: 'm10', name: 'Cranberry', cost: 10000000000000, desc: 'Global Egg production +200%', bought: false, targetGen: -1 },
-        { id: 'm11', name: 'Clarabelle', cost: 100000000000000, desc: 'Global Egg production x10', bought: false, targetGen: -1 }
+    const flockManagers = [
+        { id: 'fm1', name: 'Annie', cost: 1000, desc: 'Automates Chick production', bought: false, targetGen: 0 },
+        { id: 'fm2', name: 'Lunae', cost: 25000, desc: 'Automates Backyard Coop', bought: false, targetGen: 1 },
+        { id: 'fm3', name: 'Cleo', cost: 500000, desc: 'Automates Walk-in Enclosure', bought: false, targetGen: 2 },
+        { id: 'fm4', name: 'Myel', cost: 10000000, desc: 'Automates Solar-Fenced Paddock', bought: false, targetGen: 3 },
+        { id: 'fm5', name: 'CoCo', cost: 250000000, desc: 'Automates Free-Range Barn', bought: false, targetGen: 4 },
+        { id: 'fm6', name: 'Rhiannon', cost: 5000000000, desc: 'Automates Commercial Farm', bought: false, targetGen: 5 },
+        { id: 'fm7', name: 'Bertha', cost: 50000000000, desc: 'Global Egg production +50%', bought: false, targetGen: -1 },
+        { id: 'fm8', name: 'Violet', cost: 250000000000, desc: 'All cycles run 25% faster', bought: false, targetGen: -1 },
+        { id: 'fm9', name: 'Marianne', cost: 1000000000000, desc: 'Gather Egg button yields x100', bought: false, targetGen: -1 },
+        { id: 'fm10', name: 'Cranberry', cost: 10000000000000, desc: 'Global Egg production +200%', bought: false, targetGen: -1 },
+        { id: 'fm11', name: 'Clarabelle', cost: 100000000000000, desc: 'Global Egg production x10', bought: false, targetGen: -1 }
     ];
 
-    let upgrades = [
-        // Chick
-        { id: 'u_c_d1', name: 'Chick Feed Discount I', targetGen: 0, type: 'discount', value: 0.10, cost: 250, desc: 'Chicks cost 10% less', bought: false },
-        { id: 'u_c_m1', name: 'Chick Growth Hormones I', targetGen: 0, type: 'mult', value: 2, cost: 500, desc: 'Chick production x2', bought: false },
-        { id: 'u_c_d2', name: 'Chick Feed Discount II', targetGen: 0, type: 'discount', value: 0.25, cost: 2500, desc: 'Chicks cost 25% less', bought: false },
-        { id: 'u_c_m2', name: 'Chick Growth Hormones II', targetGen: 0, type: 'mult', value: 5, cost: 10000, desc: 'Chick production x5', bought: false },
-        { id: 'u_c_d3', name: 'Chick Wholesale Bulk', targetGen: 0, type: 'discount', value: 0.50, cost: 50000, desc: 'Chicks cost 50% less', bought: false },
-        { id: 'u_c_m3', name: 'Golden Roost Incubation', targetGen: 0, type: 'mult', value: 10, cost: 250000, desc: 'Chick production x10', bought: false },
-
-        // Coop
-        { id: 'u_cp_d1', name: 'Lumber Bulk Rebate I', targetGen: 1, type: 'discount', value: 0.10, cost: 2500, desc: 'Coops cost 10% less', bought: false },
-        { id: 'u_cp_m1', name: 'Insulated Nesting Boxes I', targetGen: 1, type: 'mult', value: 2, cost: 5000, desc: 'Coop production x2', bought: false },
-        { id: 'u_cp_d2', name: 'Lumber Bulk Rebate II', targetGen: 1, type: 'discount', value: 0.25, cost: 25000, desc: 'Coops cost 25% less', bought: false },
-        { id: 'u_cp_m2', name: 'Insulated Nesting Boxes II', targetGen: 1, type: 'mult', value: 5, cost: 100000, desc: 'Coop production x5', bought: false },
-        { id: 'u_cp_d3', name: 'Prefab Assembly Kits', targetGen: 1, type: 'discount', value: 0.50, cost: 500000, desc: 'Coops cost 50% less', bought: false },
-        { id: 'u_cp_m3', name: 'Heated Perches', targetGen: 1, type: 'mult', value: 10, cost: 2500000, desc: 'Coop production x10', bought: false },
-
-        // Enclosure
-        { id: 'u_e_d1', name: 'Hardware Cloth Sale I', targetGen: 2, type: 'discount', value: 0.10, cost: 30000, desc: 'Walk-ins cost 10% less', bought: false },
-        { id: 'u_e_m1', name: 'Automatic Waterers I', targetGen: 2, type: 'mult', value: 2, cost: 60000, desc: 'Walk-in production x2', bought: false },
-        { id: 'u_e_d2', name: 'Hardware Cloth Sale II', targetGen: 2, type: 'discount', value: 0.25, cost: 300000, desc: 'Walk-ins cost 25% less', bought: false },
-        { id: 'u_e_m2', name: 'Automatic Waterers II', targetGen: 2, type: 'mult', value: 5, cost: 1200000, desc: 'Walk-in production x5', bought: false },
-        { id: 'u_e_d3', name: 'Welded Frame Construction', targetGen: 2, type: 'discount', value: 0.50, cost: 6000000, desc: 'Walk-ins cost 50% less', bought: false },
-        { id: 'u_e_m3', name: 'Predator-Proof Fortification', targetGen: 2, type: 'mult', value: 10, cost: 30000000, desc: 'Walk-in production x10', bought: false },
-
-        // Paddock
-        { id: 'u_p_d1', name: 'Solar Charger Clearance I', targetGen: 3, type: 'discount', value: 0.10, cost: 375000, desc: 'Paddocks cost 10% less', bought: false },
-        { id: 'u_p_m1', name: 'Rotational Grazing I', targetGen: 3, type: 'mult', value: 2, cost: 750000, desc: 'Paddock production x2', bought: false },
-        { id: 'u_p_d2', name: 'Solar Charger Clearance II', targetGen: 3, type: 'discount', value: 0.25, cost: 3750000, desc: 'Paddocks cost 25% less', bought: false },
-        { id: 'u_p_m2', name: 'Rotational Grazing II', targetGen: 3, type: 'mult', value: 5, cost: 15000000, desc: 'Paddock production x5', bought: false },
-        { id: 'u_p_d3', name: 'High-Tensile Wire Mesh', targetGen: 3, type: 'discount', value: 0.50, cost: 75000000, desc: 'Paddocks cost 50% less', bought: false },
-        { id: 'u_p_m3', name: 'Alfalfa Clover Seed Mix', targetGen: 3, type: 'mult', value: 10, cost: 375000000, desc: 'Paddock production x10', bought: false },
-
-        // Barn
-        { id: 'u_b_d1', name: 'Barn Architecture Grant I', targetGen: 4, type: 'discount', value: 0.10, cost: 5000000, desc: 'Barns cost 10% less', bought: false },
-        { id: 'u_b_m1', name: 'Ventilation Fans I', targetGen: 4, type: 'mult', value: 2, cost: 10000000, desc: 'Barn production x2', bought: false },
-        { id: 'u_b_d2', name: 'Barn Architecture Grant II', targetGen: 4, type: 'discount', value: 0.25, cost: 50000000, desc: 'Barns cost 25% less', bought: false },
-        { id: 'u_b_m2', name: 'Ventilation Fans II', targetGen: 4, type: 'mult', value: 5, cost: 200000000, desc: 'Barn production x5', bought: false },
-        { id: 'u_b_d3', name: 'Steel Truss Foundations', targetGen: 4, type: 'discount', value: 0.50, cost: 1000000000, desc: 'Barns cost 50% less', bought: false },
-        { id: 'u_b_m3', name: 'Climate-Controlled Lofts', targetGen: 4, type: 'mult', value: 10, cost: 5000000000, desc: 'Barn production x10', bought: false },
-
-        // Farm
-        { id: 'u_f_d1', name: 'Commercial Subsidy I', targetGen: 5, type: 'discount', value: 0.10, cost: 62500000, desc: 'Farms cost 10% less', bought: false },
-        { id: 'u_f_m1', name: 'Conveyor Egg Belts I', targetGen: 5, type: 'mult', value: 2, cost: 125000000, desc: 'Farm production x2', bought: false },
-        { id: 'u_f_d2', name: 'Commercial Subsidy II', targetGen: 5, type: 'discount', value: 0.25, cost: 625000000, desc: 'Farms cost 25% less', bought: false },
-        { id: 'u_f_m2', name: 'Conveyor Egg Belts II', targetGen: 5, type: 'mult', value: 5, cost: 2500000000, desc: 'Farm production x5', bought: false },
-        { id: 'u_f_d3', name: 'Industrial Land Zoning', targetGen: 5, type: 'discount', value: 0.50, cost: 12500000000, desc: 'Farms cost 50% less', bought: false },
-        { id: 'u_f_m3', name: 'Automated Sorting Plant', targetGen: 5, type: 'mult', value: 10, cost: 62500000000, desc: 'Farm production x10', bought: false }
+    // World 2: Equine Estate
+    const equineGenerators = [
+        { id: 'foal', name: 'Miniature Foal', baseCost: 10, baseProd: 1, baseTime: 0.6, owned: 0, progress: 0, isRunning: false, automated: false },
+        { id: 'stall', name: 'Paddock Stall', baseCost: 100, baseProd: 12, baseTime: 3.0, owned: 0, progress: 0, isRunning: false, automated: false },
+        { id: 'arena', name: 'Training Arena', baseCost: 1200, baseProd: 140, baseTime: 8.0, owned: 0, progress: 0, isRunning: false, automated: false },
+        { id: 'roundpen', name: 'Covered Round Pen', baseCost: 15000, baseProd: 1200, baseTime: 24.0, owned: 0, progress: 0, isRunning: false, automated: false },
+        { id: 'stable', name: 'Equestrian Stable', baseCost: 200000, baseProd: 9500, baseTime: 96.0, owned: 0, progress: 0, isRunning: false, automated: false },
+        { id: 'studfarm', name: 'Championship Stud Farm', baseCost: 2500000, baseProd: 75000, baseTime: 384.0, owned: 0, progress: 0, isRunning: false, automated: false }
     ];
+
+    const equineManagers = [
+        { id: 'em1', name: 'Dyna', cost: 1000, desc: 'Automates Miniature Foal', bought: false, targetGen: 0 },
+        { id: 'em2', name: 'Thunder', cost: 25000, desc: 'Automates Paddock Stall', bought: false, targetGen: 1 },
+        { id: 'em3', name: 'Dexter', cost: 500000, desc: 'Automates Training Arena', bought: false, targetGen: 2 },
+        { id: 'em4', name: 'Zippy', cost: 10000000, desc: 'Automates Covered Round Pen', bought: false, targetGen: 3 },
+        { id: 'em5', name: 'Blaze', cost: 250000000, desc: 'Automates Equestrian Stable', bought: false, targetGen: 4 },
+        { id: 'em6', name: 'Stormy', cost: 5000000000, desc: 'Automates Championship Stud Farm', bought: false, targetGen: 5 },
+        { id: 'em7', name: 'Copper', cost: 50000000000, desc: 'Global Horseshoe production +50%', bought: false, targetGen: -1 },
+        { id: 'em8', name: 'Shadow', cost: 250000000000, desc: 'All cycles run 25% faster', bought: false, targetGen: -1 },
+        { id: 'em9', name: 'Pegasus', cost: 1000000000000, desc: 'Forge Horseshoe button yields x100', bought: false, targetGen: -1 },
+        { id: 'em10', name: 'Sterling', cost: 10000000000000, desc: 'Global Horseshoe production +200%', bought: false, targetGen: -1 },
+        { id: 'em11', name: 'Four Socks Shakur', cost: 100000000000000, desc: 'Global Horseshoe production x10', bought: false, targetGen: -1 }
+    ];
+
+    let gameState = {
+        activeWorld: 'flock', // 'flock' or 'equine'
+        worlds: {
+            flock: {
+                currency: 0,
+                lifetimeCurrency: 0,
+                prestigeCurrency: 0,
+                boostActiveUntil: 0,
+                boostCooldownUntil: 0,
+                generators: flockGenerators,
+                managers: flockManagers,
+                upgrades: createUpgradesForWorld(flockGenerators, 'Eggs'),
+                lastSaveTime: Date.now()
+            },
+            equine: {
+                currency: 0,
+                lifetimeCurrency: 0,
+                prestigeCurrency: 0,
+                boostActiveUntil: 0,
+                boostCooldownUntil: 0,
+                generators: equineGenerators,
+                managers: equineManagers,
+                upgrades: createUpgradesForWorld(equineGenerators, 'Horseshoes'),
+                lastSaveTime: Date.now()
+            }
+        }
+    };
+
+    function curW() {
+        return gameState.worlds[gameState.activeWorld];
+    }
+
+    // --- Calculation Engine ---
+    function isBoostActive() {
+        return Date.now() < curW().boostActiveUntil;
+    }
 
     function getPrestigeMultiplier() { 
-        return 1 + (goldenEggs * 0.10); 
+        return 1 + (curW().prestigeCurrency * 0.10); 
     }
 
     function getGlobalMultiplier() {
         let mult = 1;
-        const bertha = managers.find(m => m.id === 'm7');
-        const cranberry = managers.find(m => m.id === 'm10');
-        const clarabelle = managers.find(m => m.id === 'm11');
-        if (bertha && bertha.bought) mult *= 1.5;
-        if (cranberry && cranberry.bought) mult *= 3.0;
-        if (clarabelle && clarabelle.bought) mult *= 10.0;
+        const w = curW();
+        // Check global managers (index 6, 9, 10)
+        if (w.managers[6] && w.managers[6].bought) mult *= 1.5;
+        if (w.managers[9] && w.managers[9].bought) mult *= 3.0;
+        if (w.managers[10] && w.managers[10].bought) mult *= 10.0;
+        if (isBoostActive()) mult *= 2.0;
         return mult * getPrestigeMultiplier();
     }
 
     function getGenDiscount(genIndex) {
         let discount = 0;
-        upgrades.forEach(u => {
+        curW().upgrades.forEach(u => {
             if (u.targetGen === genIndex && u.type === 'discount' && u.bought) {
                 discount = Math.max(discount, u.value);
             }
@@ -627,7 +845,7 @@
 
     function getGenMultiplier(genIndex) {
         let mult = 1;
-        upgrades.forEach(u => {
+        curW().upgrades.forEach(u => {
             if (u.targetGen === genIndex && u.type === 'mult' && u.bought) {
                 mult *= u.value;
             }
@@ -655,10 +873,10 @@
     }
 
     function getCycleTime(gen) {
-        const violet = managers.find(m => m.id === 'm8');
-        const globalSpeed = (violet && violet.bought) ? 1.25 : 1.0;
+        const mgr8 = curW().managers[7];
+        const globalSpeed = (mgr8 && mgr8.bought) ? 1.25 : 1.0;
         const milestoneSpeed = getMilestoneSpeedMultiplier(gen.owned);
-        return Math.max(0.08, gen.baseTime / (milestoneSpeed * globalSpeed));
+        return Math.max(0.05, gen.baseTime / (milestoneSpeed * globalSpeed));
     }
 
     function getCyclePayout(gen, index) {
@@ -676,22 +894,19 @@
         return currentCost * ((Math.pow(COST_MULTIPLIER, amount) - 1) / (COST_MULTIPLIER - 1));
     }
 
-    // Dynamic resolution for x1, x5, x10, x100, Next, and Max
     function getResolvedBuyQty(gen, genIndex) {
-        if (typeof buyQty === 'number') {
-            return buyQty;
-        }
-        if (buyQty === 'next') {
+        const mode = BUY_MODES[buyModeIndex];
+        if (typeof mode === 'number') return mode;
+        if (mode === 'next') {
             const nextMilestone = getNextMilestone(gen.owned);
             return Math.max(1, nextMilestone - gen.owned);
         }
-        if (buyQty === 'max') {
+        if (mode === 'max') {
             const discountedBase = gen.baseCost * getGenDiscount(genIndex);
             const currentCost = discountedBase * Math.pow(COST_MULTIPLIER, gen.owned);
-            if (eggs < currentCost) return 1;
-            
-            let n = Math.floor(Math.log(1 + (eggs * (COST_MULTIPLIER - 1)) / currentCost) / Math.log(COST_MULTIPLIER));
-            while (n > 1 && getBatchCost(gen, genIndex, n) > eggs) {
+            if (curW().currency < currentCost) return 1;
+            let n = Math.floor(Math.log(1 + (curW().currency * (COST_MULTIPLIER - 1)) / currentCost) / Math.log(COST_MULTIPLIER));
+            while (n > 1 && getBatchCost(gen, genIndex, n) > curW().currency) {
                 n--;
             }
             return Math.max(1, n);
@@ -701,7 +916,7 @@
 
     function getEstimatedEPS() {
         let eps = 0;
-        generators.forEach((gen, idx) => {
+        curW().generators.forEach((gen, idx) => {
             if (gen.owned > 0 && gen.automated) {
                 const payout = getCyclePayout(gen, idx);
                 const time = getCycleTime(gen);
@@ -711,19 +926,20 @@
         return eps;
     }
 
+    // --- Actions ---
     function manualClick(e) {
         playClickSound();
-        const marianne = managers.find(m => m.id === 'm9');
+        const m9 = curW().managers[8];
         let clickVal = 1 * getGlobalMultiplier();
-        if (marianne && marianne.bought) clickVal *= 100;
+        if (m9 && m9.bought) clickVal *= 100;
         
-        eggs += clickVal;
-        lifetimeEggs += clickVal;
+        curW().currency += clickVal;
+        curW().lifetimeCurrency += clickVal;
         updateUI();
     }
 
     function startCycle(index) {
-        const gen = generators[index];
+        const gen = curW().generators[index];
         if (gen.owned > 0 && !gen.isRunning) {
             playClickSound();
             gen.isRunning = true;
@@ -732,13 +948,13 @@
     }
 
     function buyGenerator(index, e) {
-        const gen = generators[index];
+        const gen = curW().generators[index];
         const qty = getResolvedBuyQty(gen, index);
         const cost = getBatchCost(gen, index, qty);
-        if (eggs >= cost) {
+        if (curW().currency >= cost) {
             playChimeSound();
             if (e) triggerConfetti(e.clientX, e.clientY);
-            eggs -= cost;
+            curW().currency -= cost;
             gen.owned += qty;
             renderGenerators();
             updateUI();
@@ -746,11 +962,11 @@
     }
 
     function buyUpgrade(index, e) {
-        const upg = upgrades[index];
-        if (eggs >= upg.cost && !upg.bought) {
+        const upg = curW().upgrades[index];
+        if (curW().currency >= upg.cost && !upg.bought) {
             playChimeSound();
             if (e) triggerConfetti(e.clientX, e.clientY);
-            eggs -= upg.cost;
+            curW().currency -= upg.cost;
             upg.bought = true;
             renderUpgrades();
             renderGenerators();
@@ -759,18 +975,19 @@
     }
 
     function buyManager(index, e) {
-        const mgr = managers[index];
-        if (eggs >= mgr.cost && !mgr.bought) {
+        const mgr = curW().managers[index];
+        if (curW().currency >= mgr.cost && !mgr.bought) {
             playChimeSound();
             if (e) triggerConfetti(e.clientX, e.clientY);
-            eggs -= mgr.cost;
+            curW().currency -= mgr.cost;
             mgr.bought = true;
             
             if (mgr.targetGen >= 0) {
-                generators[mgr.targetGen].automated = true;
-                if (!generators[mgr.targetGen].isRunning) {
-                    generators[mgr.targetGen].isRunning = true;
-                    generators[mgr.targetGen].progress = 0;
+                const target = curW().generators[mgr.targetGen];
+                target.automated = true;
+                if (!target.isRunning) {
+                    target.isRunning = true;
+                    target.progress = 0;
                 }
             }
             renderManagers();
@@ -779,13 +996,50 @@
         }
     }
 
-    function setBuyQty(qty) {
+    function cycleBuyQty() {
         playClickSound();
-        buyQty = qty;
-        document.querySelectorAll('.pill-btn').forEach(btn => btn.classList.remove('active'));
-        document.getElementById(`pill-${qty}`).classList.add('active');
+        buyModeIndex = (buyModeIndex + 1) % BUY_MODES.length;
+        const currentMode = BUY_MODES[buyModeIndex];
+        const label = typeof currentMode === 'number' ? `x${currentMode}` : currentMode.toUpperCase();
+        document.getElementById('buy-mode-btn').innerText = `Buy: ${label}`;
         renderGenerators();
         updateUI();
+    }
+
+    function activateBoost() {
+        const now = Date.now();
+        const w = curW();
+        if (now >= w.boostCooldownUntil) {
+            playChimeSound();
+            w.boostActiveUntil = now + (2 * 60 * 1000); // 2 minutes active
+            w.boostCooldownUntil = now + (10 * 60 * 1000); // 10 minute cooldown cycle
+            updateUI();
+        }
+    }
+
+    function toggleWorld() {
+        playClickSound();
+        gameState.activeWorld = (gameState.activeWorld === 'flock') ? 'equine' : 'flock';
+        applyWorldTheme();
+        renderGenerators();
+        renderUpgrades();
+        renderManagers();
+        updateUI();
+    }
+
+    function applyWorldTheme() {
+        const isFlock = gameState.activeWorld === 'flock';
+        document.body.className = isFlock ? 'theme-flock' : 'theme-equine';
+        document.getElementById('world-title').innerText = isFlock ? 'Backyard Flock' : 'Equine Estate';
+        document.getElementById('world-swap-fab').innerText = isFlock ? '🐴' : '🐔';
+        document.getElementById('gather-btn').innerText = isFlock ? '🥚 Gather Egg' : '🧲 Forge Horseshoe';
+        document.getElementById('tab-label-gen').innerText = isFlock ? 'Generators' : 'Facilities';
+        document.getElementById('prestige-title').innerText = isFlock ? 'Claim Golden Eggs' : 'Claim Golden Saddles';
+        document.getElementById('prestige-desc').innerText = isFlock 
+            ? 'Reset flock progress to attract Golden Eggs. Each Golden Egg provides a permanent +10% boost.'
+            : 'Reset estate progress to attract Golden Saddles. Each Golden Saddle provides a permanent +10% boost.';
+        document.getElementById('lifetime-label').innerText = isFlock ? 'Total Lifetime Eggs Produced:' : 'Total Lifetime Horseshoes Forged:';
+        document.getElementById('stats-modal-title').innerText = isFlock ? 'Flock Revenue Breakdown' : 'Equine Revenue Breakdown';
     }
 
     function switchTab(tabId) {
@@ -794,32 +1048,35 @@
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
         
         document.getElementById(`tab-${tabId}`).classList.add('active');
-        event.currentTarget.classList.add('active');
+        document.getElementById(`tab-btn-${tabId}`).classList.add('active');
         if (tabId === 'generators') renderGenerators();
         if (tabId === 'upgrades') renderUpgrades();
         if (tabId === 'managers') renderManagers();
     }
 
-    function calculatePendingGoldenEggs() {
-        const totalEarnable = Math.floor(Math.sqrt(lifetimeEggs / 100));
-        return Math.max(0, totalEarnable - goldenEggs);
+    // --- Prestige Engine ---
+    function calculatePendingPrestige() {
+        const totalEarnable = Math.floor(Math.sqrt(curW().lifetimeCurrency / 100));
+        return Math.max(0, totalEarnable - curW().prestigeCurrency);
     }
 
     function prestige(e) {
-        const pending = calculatePendingGoldenEggs();
-        if (pending > 0 && confirm(`Claim ${formatFullWords(pending)} Golden Eggs and reset your flock? (Lifetime Eggs will not reset).`)) {
+        const pending = calculatePendingPrestige();
+        const unit = (gameState.activeWorld === 'flock') ? 'Golden Eggs' : 'Golden Saddles';
+        if (pending > 0 && confirm(`Claim ${formatFullWords(pending)} ${unit} and reset this property?`)) {
             playChimeSound();
             if (e) triggerConfetti(e.clientX, e.clientY);
-            goldenEggs += pending;
-            eggs = 0;
-            generators.forEach(g => {
+            const w = curW();
+            w.prestigeCurrency += pending;
+            w.currency = 0;
+            w.generators.forEach(g => {
                 g.owned = 0;
                 g.progress = 0;
                 g.isRunning = false;
                 g.automated = false;
             });
-            managers.forEach(m => m.bought = false);
-            upgrades.forEach(u => u.bought = false);
+            w.managers.forEach(m => m.bought = false);
+            w.upgrades.forEach(u => u.bought = false);
 
             renderGenerators();
             renderUpgrades();
@@ -831,76 +1088,170 @@
 
     function hardReset() {
         playClickSound();
-        const confirm1 = confirm("WARNING: Are you sure you want to completely erase ALL progress? This will reset all Eggs, Golden Eggs, Upgrades, and Managers.");
-        if (confirm1) {
-            const confirm2 = confirm("FINAL WARNING: This is irreversible and wipes everything back to Day 1. Are you 100% sure?");
-            if (confirm2) {
-                ['backyardFlockSave', 'backyardFlockSave2', 'backyardFlockSave3', 'backyardFlockSave4', 'backyardFlockSave5', 'backyardFlockSave6', 'backyardFlockSave7'].forEach(key => {
-                    localStorage.removeItem(key);
-                });
+        const c1 = confirm("WARNING: Are you sure you want to completely erase ALL progress across BOTH Backyard Flock and Equine Estate?");
+        if (c1) {
+            const c2 = confirm("FINAL WARNING: This is completely irreversible and resets everything back to Day 1. Proceed?");
+            if (c2) {
+                ['backyardFlockSave', 'backyardFlockSave6', 'backyardFlockSave7', 'empireTycoonSaveV3'].forEach(k => localStorage.removeItem(k));
                 location.reload();
             }
         }
     }
 
-    function loadGame() {
-        const savedData = localStorage.getItem('backyardFlockSave7');
-        if (savedData) {
-            const data = JSON.parse(savedData);
-            eggs = data.eggs || 0;
-            lifetimeEggs = data.lifetimeEggs || 0;
-            goldenEggs = data.goldenEggs || 0;
-            lastSaveTime = data.lastSaveTime || Date.now();
-            
-            generators.forEach((g, i) => { 
-                if (data.generators && data.generators[i]) {
-                    g.owned = data.generators[i].owned || 0;
-                    g.automated = data.generators[i].automated || false;
-                    if (g.automated && g.owned > 0) g.isRunning = true;
-                }
-            });
-            if (data.managers) {
-                data.managers.forEach(savedMgr => {
-                    const mgr = managers.find(m => m.id === savedMgr.id);
-                    if (mgr) mgr.bought = savedMgr.bought;
-                });
-            }
-            if (data.upgrades) {
-                data.upgrades.forEach(savedUpg => {
-                    const upg = upgrades.find(u => u.id === savedUpg.id);
-                    if (upg) upg.bought = savedUpg.bought;
-                });
-            }
-            calculateOfflineGains();
-        }
+    // --- Statistics Modal Breakdown ---
+    function openStatsModal() {
+        playClickSound();
+        const modal = document.getElementById('stats-modal');
+        const list = document.getElementById('stats-leaderboard');
+        const unit = (gameState.activeWorld === 'flock') ? 'eggs/sec' : 'horseshoes/sec';
+        const totalEPS = getEstimatedEPS();
+        
+        document.getElementById('stats-modal-eps').innerText = `Total Production: +${formatFullWords(totalEPS)} ${unit}`;
+        list.innerHTML = '';
+
+        let ranked = curW().generators.map((gen, idx) => {
+            const payout = getCyclePayout(gen, idx);
+            const time = getCycleTime(gen);
+            const eps = (gen.owned > 0 && gen.automated) ? (payout / time) : 0;
+            return { name: gen.name, owned: gen.owned, eps: eps };
+        });
+
+        ranked.sort((a, b) => b.eps - a.eps);
+
+        ranked.forEach((item, idx) => {
+            const pct = (totalEPS > 0) ? ((item.eps / totalEPS) * 100).toFixed(1) : '0.0';
+            const badge = idx === 0 ? '👑 ' : '';
+            list.innerHTML += `
+                <div class="stats-row">
+                    <div>
+                        <span class="stats-rank">${badge}#${idx + 1} ${item.name}</span>
+                        <div class="stats">Owned: ${item.owned}</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-weight:bold; color:#fff;">+${formatFullWords(item.eps)}/s</div>
+                        <div class="stats">${pct}% share</div>
+                    </div>
+                </div>
+            `;
+        });
+
+        modal.style.display = 'flex';
     }
 
+    function closeStatsModal() {
+        playClickSound();
+        document.getElementById('stats-modal').style.display = 'none';
+    }
+
+    // --- Save & Offline Gains ---
     function saveGame() {
-        lastSaveTime = Date.now();
-        localStorage.setItem('backyardFlockSave7', JSON.stringify({ 
-            eggs, lifetimeEggs, goldenEggs, generators, managers, upgrades, lastSaveTime 
-        }));
+        curW().lastSaveTime = Date.now();
+        localStorage.setItem('empireTycoonSaveV3', JSON.stringify(gameState));
+    }
+
+    function loadGame() {
+        const saved = localStorage.getItem('empireTycoonSaveV3');
+        if (saved) {
+            try {
+                const data = JSON.parse(saved);
+                if (data.worlds && data.worlds.flock) {
+                    gameState.activeWorld = data.activeWorld || 'flock';
+                    // Merge flock
+                    ['flock', 'equine'].forEach(wKey => {
+                        if (data.worlds[wKey]) {
+                            const src = data.worlds[wKey];
+                            const dst = gameState.worlds[wKey];
+                            dst.currency = src.currency || 0;
+                            dst.lifetimeCurrency = src.lifetimeCurrency || 0;
+                            dst.prestigeCurrency = src.prestigeCurrency || 0;
+                            dst.boostActiveUntil = src.boostActiveUntil || 0;
+                            dst.boostCooldownUntil = src.boostCooldownUntil || 0;
+                            dst.lastSaveTime = src.lastSaveTime || Date.now();
+                            if (src.generators) {
+                                src.generators.forEach((sg, i) => {
+                                    if (dst.generators[i]) {
+                                        dst.generators[i].owned = sg.owned || 0;
+                                        dst.generators[i].automated = sg.automated || false;
+                                        if (dst.generators[i].automated && dst.generators[i].owned > 0) {
+                                            dst.generators[i].isRunning = true;
+                                        }
+                                    }
+                                });
+                            }
+                            if (src.managers) {
+                                src.managers.forEach(sm => {
+                                    const m = dst.managers.find(dm => dm.id === sm.id);
+                                    if (m) m.bought = sm.bought;
+                                });
+                            }
+                            if (src.upgrades) {
+                                src.upgrades.forEach(su => {
+                                    const u = dst.upgrades.find(du => du.id === su.id);
+                                    if (u) u.bought = su.bought;
+                                });
+                            }
+                        }
+                    });
+                }
+            } catch (e) {
+                console.error("Save load error", e);
+            }
+        } else {
+            // Attempt migration from v2 (Save 7)
+            const old = localStorage.getItem('backyardFlockSave7');
+            if (old) {
+                try {
+                    const data = JSON.parse(old);
+                    const fw = gameState.worlds.flock;
+                    fw.currency = data.eggs || 0;
+                    fw.lifetimeCurrency = data.lifetimeEggs || 0;
+                    fw.prestigeCurrency = data.goldenEggs || 0;
+                    if (data.generators) {
+                        data.generators.forEach((g, i) => {
+                            if (fw.generators[i]) {
+                                fw.generators[i].owned = g.owned || 0;
+                                fw.generators[i].automated = g.automated || false;
+                            }
+                        });
+                    }
+                } catch(e) {}
+            }
+        }
+        applyWorldTheme();
+        calculateOfflineGains();
     }
 
     function calculateOfflineGains() {
         const now = Date.now();
-        const diffSeconds = (now - lastSaveTime) / 1000;
-        if (diffSeconds > 30) {
-            let offlineGains = 0;
-            generators.forEach((gen, idx) => {
-                if (gen.owned > 0 && gen.automated) {
-                    const payout = getCyclePayout(gen, idx);
-                    const time = getCycleTime(gen);
-                    offlineGains += (payout / time) * diffSeconds;
+        ['flock', 'equine'].forEach(wKey => {
+            const w = gameState.worlds[wKey];
+            const diffSeconds = (now - w.lastSaveTime) / 1000;
+            if (diffSeconds > 30) {
+                let gains = 0;
+                w.generators.forEach((gen, idx) => {
+                    if (gen.owned > 0 && gen.automated) {
+                        // calculate standard payout
+                        let genMult = 1;
+                        w.upgrades.forEach(u => { if (u.targetGen === idx && u.type === 'mult' && u.bought) genMult *= u.value; });
+                        let gMult = (1 + (w.prestigeCurrency * 0.10));
+                        if (w.managers[6] && w.managers[6].bought) gMult *= 1.5;
+                        if (w.managers[9] && w.managers[9].bought) gMult *= 3.0;
+                        if (w.managers[10] && w.managers[10].bought) gMult *= 10.0;
+                        const payout = gen.owned * gen.baseProd * genMult * gMult;
+                        const speed = getMilestoneSpeedMultiplier(gen.owned) * ((w.managers[7] && w.managers[7].bought) ? 1.25 : 1.0);
+                        const time = Math.max(0.05, gen.baseTime / speed);
+                        gains += (payout / time) * diffSeconds;
+                    }
+                });
+                if (gains > 0 && wKey === gameState.activeWorld) {
+                    w.currency += gains;
+                    w.lifetimeCurrency += gains;
+                    const unit = (wKey === 'flock') ? 'Eggs' : 'Horseshoes';
+                    document.getElementById('offline-earned').innerText = `+${formatFullWords(gains)} ${unit}`;
+                    document.getElementById('offline-modal').style.display = 'flex';
                 }
-            });
-            if (offlineGains > 0) {
-                eggs += offlineGains;
-                lifetimeEggs += offlineGains;
-                document.getElementById('offline-eggs-earned').innerText = `${formatFullWords(offlineGains)} Eggs`;
-                document.getElementById('offline-modal').style.display = 'flex';
             }
-        }
+        });
     }
 
     function closeOfflineModal() {
@@ -909,17 +1260,21 @@
         updateUI();
     }
 
+    // --- Renderers ---
     function renderGenerators() {
-        const container = document.getElementById('upgrades-container');
+        const container = document.getElementById('generators-container');
         if (!container.parentElement.classList.contains('active')) return;
         
         container.innerHTML = '';
-        generators.forEach((gen, index) => {
+        const unit = (gameState.activeWorld === 'flock') ? 'Eggs' : 'Horseshoes';
+
+        curW().generators.forEach((gen, index) => {
             const cycleTime = getCycleTime(gen);
             const payout = getCyclePayout(gen, index);
             const nextMilestone = getNextMilestone(gen.owned);
             const qty = getResolvedBuyQty(gen, index);
             const cost = getBatchCost(gen, index, qty);
+            const isFast = (cycleTime <= 0.20 && gen.automated);
 
             container.innerHTML += `
                 <div class="gen-card">
@@ -932,9 +1287,9 @@
                     </div>
                     <div class="gen-body">
                         <div class="gen-progress-box" onclick="startCycle(${index})">
-                            <div class="gen-progress-fill" id="pfill-${index}" style="width: ${gen.progress * 100}%;"></div>
+                            <div class="gen-progress-fill ${isFast ? 'fast-stream' : ''}" id="pfill-${index}" style="width: ${isFast ? 100 : (gen.progress * 100)}%;"></div>
                             <div class="gen-progress-text" id="ptext-${index}">
-                                +${formatFullWords(payout)} Eggs (${formatTime(cycleTime)})
+                                +${formatFullWords(payout)} ${unit} (${formatTime(cycleTime)})
                             </div>
                         </div>
                         <button class="buy-btn" id="btn-gen-${index}" onclick="buyGenerator(${index}, event)">
@@ -948,12 +1303,12 @@
     }
 
     function renderUpgrades() {
-        const container = document.getElementById('upgrades-list');
+        const container = document.getElementById('upgrades-container');
         if (!container.parentElement.classList.contains('active')) return;
         
         container.innerHTML = '';
         let unbought = 0;
-        upgrades.forEach((upg, index) => {
+        curW().upgrades.forEach((upg, index) => {
             if (!upg.bought) {
                 unbought++;
                 container.innerHTML += `
@@ -980,7 +1335,7 @@
         
         container.innerHTML = '';
         let unbought = 0;
-        managers.forEach((mgr, index) => {
+        curW().managers.forEach((mgr, index) => {
             if (!mgr.bought) {
                 unbought++;
                 container.innerHTML += `
@@ -1002,17 +1357,54 @@
     }
 
     function updateUI() {
-        document.getElementById('egg-count').innerText = `${formatFullWords(eggs)} Eggs`;
-        document.getElementById('eps').innerText = `Est: +${formatFullWords(getEstimatedEPS())} eggs/sec`;
-        document.getElementById('lifetime-display').innerText = formatFullWords(lifetimeEggs);
-        
-        const pendingGE = calculatePendingGoldenEggs();
-        document.getElementById('prestige-preview').innerText = `Golden Eggs to Claim: ${formatFullWords(pendingGE)}`;
-        document.getElementById('prestige-current-bonus').innerText = `${formatFullWords(goldenEggs)} Golden Eggs (+${formatFullWords(goldenEggs * 10)}% Production Bonus)`;
-        document.getElementById('prestige-btn').disabled = (pendingGE <= 0);
+        const w = curW();
+        const isFlock = (gameState.activeWorld === 'flock');
+        const unit = isFlock ? 'Eggs' : 'Horseshoes';
+        const prestigeUnit = isFlock ? 'Golden Eggs' : 'Golden Saddles';
 
-        // Dynamically update generator button values and quantities
-        generators.forEach((gen, index) => {
+        document.getElementById('currency-count').innerText = `${formatFullWords(w.currency)} ${unit}`;
+        document.getElementById('eps').innerText = `Est: +${formatFullWords(getEstimatedEPS())} ${unit.toLowerCase()}/sec`;
+        document.getElementById('lifetime-display').innerText = formatFullWords(w.lifetimeCurrency);
+        
+        const pending = calculatePendingPrestige();
+        document.getElementById('prestige-preview').innerText = `Claimable: ${formatFullWords(pending)} ${prestigeUnit}`;
+        document.getElementById('prestige-current-bonus').innerText = `${formatFullWords(w.prestigeCurrency)} ${prestigeUnit} (+${formatFullWords(w.prestigeCurrency * 10)}% Bonus)`;
+        document.getElementById('prestige-btn').disabled = (pending <= 0);
+
+        // Boost Status Bar
+        const now = Date.now();
+        const boostBtn = document.getElementById('boost-btn');
+        const boostText = document.getElementById('boost-text');
+        if (now < w.boostActiveUntil) {
+            const remSec = Math.ceil((w.boostActiveUntil - now) / 1000);
+            boostBtn.classList.add('active');
+            boostText.innerText = `⚡ 2x Active! (${remSec}s remaining)`;
+        } else if (now < w.boostCooldownUntil) {
+            const remSec = Math.ceil((w.boostCooldownUntil - now) / 1000);
+            const m = Math.floor(remSec / 60);
+            const s = remSec % 60;
+            boostBtn.classList.remove('active');
+            boostText.innerText = `⚡ Boost: ${m}:${s < 10 ? '0' : ''}${s}`;
+        } else {
+            boostBtn.classList.remove('active');
+            boostText.innerText = `⚡ 2x Boost (Ready!)`;
+        }
+
+        // Affordable Tab Notification Badges (Green Dots)
+        let canAffordGen = false;
+        w.generators.forEach((gen, idx) => {
+            const qty = getResolvedBuyQty(gen, idx);
+            if (w.currency >= getBatchCost(gen, idx, qty)) canAffordGen = true;
+        });
+        const canAffordUpg = w.upgrades.some(u => !u.bought && w.currency >= u.cost);
+        const canAffordMgr = w.managers.some(m => !m.bought && w.currency >= m.cost);
+
+        document.getElementById('badge-generators').style.display = canAffordGen ? 'block' : 'none';
+        document.getElementById('badge-upgrades').style.display = canAffordUpg ? 'block' : 'none';
+        document.getElementById('badge-managers').style.display = canAffordMgr ? 'block' : 'none';
+
+        // Button States
+        w.generators.forEach((gen, index) => {
             const btn = document.getElementById(`btn-gen-${index}`);
             if (btn) {
                 const qty = getResolvedBuyQty(gen, index);
@@ -1021,60 +1413,78 @@
                 const qtyEl = document.getElementById(`btn-qty-${index}`);
                 if (costEl) costEl.innerText = formatFullWords(cost);
                 if (qtyEl) qtyEl.innerText = `Buy x${formatFullWords(qty)}`;
-                btn.disabled = eggs < cost;
+                btn.disabled = w.currency < cost;
             }
         });
 
-        upgrades.forEach((upg, index) => {
+        w.upgrades.forEach((upg, index) => {
             const btn = document.getElementById(`btn-upg-${index}`);
-            if (btn) btn.disabled = eggs < upg.cost;
+            if (btn) btn.disabled = w.currency < upg.cost;
         });
-        managers.forEach((mgr, index) => {
+
+        w.managers.forEach((mgr, index) => {
             const btn = document.getElementById(`btn-mgr-${index}`);
-            if (btn) btn.disabled = eggs < mgr.cost;
+            if (btn) btn.disabled = w.currency < mgr.cost;
         });
     }
 
+    // --- Main Game Loop ---
     let lastTick = performance.now();
 
     function gameLoop(now) {
         const dt = (now - lastTick) / 1000;
         lastTick = now;
 
-        generators.forEach((gen, index) => {
-            if (gen.owned > 0) {
-                const cycleTime = getCycleTime(gen);
+        // Run generators for both active & background worlds smoothly
+        ['flock', 'equine'].forEach(wKey => {
+            const w = gameState.worlds[wKey];
+            w.generators.forEach((gen, index) => {
+                if (gen.owned > 0) {
+                    const cycleTime = getCycleTime(gen);
+                    const isFast = (cycleTime <= 0.20 && gen.automated);
 
-                if (gen.automated && !gen.isRunning) {
-                    gen.isRunning = true;
-                    gen.progress = 0;
-                }
-
-                if (gen.isRunning) {
-                    gen.progress += (dt / cycleTime);
-                    if (gen.progress >= 1) {
-                        const payout = getCyclePayout(gen, index);
-                        eggs += payout;
-                        lifetimeEggs += payout;
-
-                        if (gen.automated) {
-                            gen.progress %= 1;
-                        } else {
-                            gen.progress = 0;
-                            gen.isRunning = false;
-                        }
+                    if (gen.automated && !gen.isRunning) {
+                        gen.isRunning = true;
+                        gen.progress = 0;
                     }
 
-                    const pFill = document.getElementById(`pfill-${index}`);
-                    if (pFill) pFill.style.width = `${Math.min(100, gen.progress * 100)}%`;
+                    if (gen.isRunning) {
+                        if (isFast) {
+                            // Stream payouts per second smoothly
+                            const payoutPerSec = getCyclePayout(gen, index) / cycleTime;
+                            const framePayout = payoutPerSec * dt;
+                            w.currency += framePayout;
+                            w.lifetimeCurrency += framePayout;
+                        } else {
+                            gen.progress += (dt / cycleTime);
+                            if (gen.progress >= 1) {
+                                const payout = getCyclePayout(gen, index);
+                                w.currency += payout;
+                                w.lifetimeCurrency += payout;
+
+                                if (gen.automated) {
+                                    gen.progress %= 1;
+                                } else {
+                                    gen.progress = 0;
+                                    gen.isRunning = false;
+                                }
+                            }
+                        }
+
+                        if (wKey === gameState.activeWorld && !isFast) {
+                            const pFill = document.getElementById(`pfill-${index}`);
+                            if (pFill) pFill.style.width = `${Math.min(100, gen.progress * 100)}%`;
+                        }
+                    }
                 }
-            }
+            });
         });
 
         updateUI();
         requestAnimationFrame(gameLoop);
     }
 
+    // Initialize
     loadGame();
     renderGenerators();
     renderUpgrades();
