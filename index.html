@@ -83,7 +83,7 @@
             font-size: 0.9em;
         }
 
-        /* Rank Ribbon (Option A) */
+        /* Rank Ribbon */
         .rank-ribbon {
             background: rgba(0, 0, 0, 0.45);
             border: 1px solid #3a3a3a;
@@ -221,7 +221,7 @@
         }
         .tab-content.active { display: block; }
 
-        /* Generators Cards */
+        /* Generator Cards */
         .gen-card {
             background-color: var(--surface);
             margin-bottom: 12px;
@@ -475,7 +475,6 @@
             cursor: pointer;
         }
 
-        /* Quest Card Styling */
         .quest-card {
             background: #1c1c1c;
             border: 1px solid #333;
@@ -529,13 +528,15 @@
 
     <div class="header">
         <div class="header-controls">
+            <!-- TEMPORARY DEBUG BUTTON -->
+            <button class="icon-ctrl-btn" style="border-radius: 8px; font-size: 0.75em; padding: 4px 8px; background: #3b2a08; border-color: #f39c12; color: #f39c12; font-weight: bold;" onclick="debugAddCurrency()">+10k</button>
             <button class="icon-ctrl-btn" id="music-btn" onclick="toggleMusic()">🔇</button>
         </div>
         <h1 id="world-title">Backyard Flock</h1>
         <div id="currency-count">0 Eggs</div>
         <div id="eps">Est: 0 eggs / sec</div>
 
-        <!-- Pinned Rank Ribbon (Option A) -->
+        <!-- Pinned Rank Ribbon -->
         <div class="rank-ribbon" onclick="openRankModal()">
             <span class="rank-badge" id="rank-ribbon-badge">Rank 1 / 50</span>
             <span class="rank-progress" id="rank-ribbon-progress">Quests: 0/3 Completed ▾</span>
@@ -549,7 +550,7 @@
         </button>
     </div>
 
-    <!-- Gather Egg / Buy Pill Row -->
+    <!-- Gather Currency / Buy Pill Row -->
     <div class="sub-bar">
         <button class="manual-gather-btn" id="gather-btn" onclick="manualClick(event)">🥚 Gather Egg</button>
         <button class="buy-mode-btn" id="buy-mode-btn" onclick="cycleBuyQty()">Buy: x1</button>
@@ -617,6 +618,7 @@
             <span id="lifetime-display" style="font-size:1.2em; color:#fff; font-weight:bold;">0</span>
         </div>
 
+        <!-- Master Hard Reset -->
         <div class="list-item prestige-box danger-box">
             <div class="info">
                 <h3 style="color: var(--danger);">Hard Reset (New Game)</h3>
@@ -883,10 +885,8 @@
         const unit = isFlock ? 'Eggs' : 'Horseshoes';
         const gName0 = isFlock ? 'Chicks' : 'Foals';
         const gName1 = isFlock ? 'Coops' : 'Stalls';
-        const gName2 = isFlock ? 'Enclosures' : 'Arenas';
 
         const targetQty0 = 10 + (level * 8);
-        const targetQty1 = Math.max(0, (level - 2) * 6);
         const targetBank = 50 * Math.pow(1.65, level);
 
         let qList = [
@@ -1075,6 +1075,19 @@
         return eps;
     }
 
+    // --- Temporary Debug Function ---
+    function debugAddCurrency() {
+        playClickSound();
+        const w = curW();
+        w.currency += 10000;
+        w.lifetimeCurrency += 10000;
+        checkQuests();
+        renderGenerators();
+        renderUpgrades();
+        renderManagers();
+        updateUI();
+    }
+
     // --- Actions ---
     function manualClick(e) {
         playClickSound();
@@ -1133,7 +1146,6 @@
     function buyAllAffordableUpgrades(e) {
         const w = curW();
         let boughtCount = 0;
-        // Sort lowest price first to maximize upgrades bought
         let available = w.upgrades
             .filter(u => !u.bought && w.generators[u.targetGen].owned > 0 && w.currency >= u.cost)
             .sort((a, b) => a.cost - b.cost);
@@ -1330,14 +1342,43 @@
         }
     }
 
+    // --- Bulletproof Master Hard Reset ---
     function hardReset() {
         playClickSound();
         const c1 = confirm("WARNING: Are you sure you want to completely erase ALL progress across BOTH Backyard Flock and Equine Estate, including Ranks?");
         if (c1) {
             const c2 = confirm("FINAL WARNING: This is completely irreversible and resets everything back to Day 1. Proceed?");
             if (c2) {
-                ['backyardFlockSave', 'backyardFlockSave6', 'backyardFlockSave7', 'empireTycoonSaveV3', 'empireTycoonSaveV4'].forEach(k => localStorage.removeItem(k));
-                location.reload();
+                // Halt all background execution timers
+                for (let i = 1; i < 99999; i++) {
+                    window.clearInterval(i);
+                    window.cancelAnimationFrame(i);
+                }
+
+                // Zero out in-memory state
+                ['flock', 'equine'].forEach(wKey => {
+                    const w = gameState.worlds[wKey];
+                    w.level = 1;
+                    w.currency = 0;
+                    w.lifetimeCurrency = 0;
+                    w.prestigeCurrency = 0;
+                    w.boostActiveUntil = 0;
+                    w.boostCooldownUntil = 0;
+                    w.generators.forEach(g => {
+                        g.owned = 0;
+                        g.progress = 0;
+                        g.isRunning = false;
+                        g.automated = false;
+                    });
+                    w.managers.forEach(m => m.bought = false);
+                    w.upgrades.forEach(u => u.bought = false);
+                });
+
+                // Clear entire phone storage domain
+                localStorage.clear();
+
+                // Reload fresh
+                window.location.href = window.location.pathname + '?reset=' + Date.now();
             }
         }
     }
@@ -1444,21 +1485,6 @@
             } catch (e) {
                 console.error("Save load error", e);
             }
-        } else {
-            // Attempt migration from v3
-            const v3 = localStorage.getItem('empireTycoonSaveV3');
-            if (v3) {
-                try {
-                    const data = JSON.parse(v3);
-                    ['flock', 'equine'].forEach(k => {
-                        if (data.worlds[k]) {
-                            gameState.worlds[k].currency = data.worlds[k].currency || 0;
-                            gameState.worlds[k].lifetimeCurrency = data.worlds[k].lifetimeCurrency || 0;
-                            gameState.worlds[k].prestigeCurrency = data.worlds[k].prestigeCurrency || 0;
-                        }
-                    });
-                } catch(e) {}
-            }
         }
         applyWorldTheme();
         calculateOfflineGains();
@@ -1503,7 +1529,6 @@
         const unit = (wKey === 'flock') ? 'Eggs' : 'Horseshoes';
 
         curW().generators.forEach((gen, index) => {
-            // Discovery Silhouette Logic: Must own previous generator
             const isUnlocked = (index === 0) || (curW().generators[index - 1].owned > 0) || (gen.owned > 0);
             
             if (!isUnlocked) {
@@ -1560,10 +1585,8 @@
         container.innerHTML = '';
         const w = curW();
 
-        // Filter: Only show upgrades for generators owned > 0
         let visibleUpgrades = w.upgrades.filter(upg => !upg.bought && w.generators[upg.targetGen].owned > 0);
 
-        // Smart Sort: Affordable unbought first, then unaffordable, sorted by price ascending
         visibleUpgrades.sort((a, b) => {
             const canAffordA = w.currency >= a.cost;
             const canAffordB = w.currency >= b.cost;
@@ -1599,7 +1622,6 @@
         container.innerHTML = '';
         const w = curW();
 
-        // Filter: Hide automation managers if parent generator isn't owned yet
         let visibleManagers = w.managers.filter(mgr => {
             if (mgr.bought) return false;
             if (mgr.targetGen >= 0 && w.generators[mgr.targetGen].owned === 0) return false;
@@ -1677,7 +1699,6 @@
             }
         });
 
-        // Visible Affordable Upgrades Calculation
         const affordableUpgs = w.upgrades.filter(u => !u.bought && w.generators[u.targetGen].owned > 0 && w.currency >= u.cost);
         const canAffordUpg = affordableUpgs.length > 0;
         const canAffordMgr = w.managers.some(m => !m.bought && (m.targetGen < 0 || w.generators[m.targetGen].owned > 0) && w.currency >= m.cost);
@@ -1686,7 +1707,6 @@
         document.getElementById('badge-upgrades').style.display = canAffordUpg ? 'block' : 'none';
         document.getElementById('badge-managers').style.display = canAffordMgr ? 'block' : 'none';
 
-        // Bulk Buy All Upgrades Button State
         const bulkBtn = document.getElementById('btn-buy-all-upgs');
         if (bulkBtn) {
             bulkBtn.innerText = `Buy All Available (${affordableUpgs.length})`;
