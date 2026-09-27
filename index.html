@@ -8,14 +8,19 @@
     <title>Backyard Flock Empire</title>
     <style>
         :root {
-            --bg: #1e1e1e;
-            --surface: #2d2d2d;
+            --bg: #141414;
+            --surface: #222222;
+            --surface-hover: #2c2c2c;
             --primary: #f39c12;
             --prestige: #f1c40f;
             --manager: #9b59b6;
+            --upgrade: #2ecc71;
+            --danger: #e74c3c;
             --text: #ffffff;
-            --text-muted: #aaaaaa;
+            --text-muted: #999999;
+            --progress-bg: #333333;
         }
+        * { box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--bg);
@@ -26,106 +31,196 @@
             flex-direction: column;
             align-items: center;
             user-select: none;
-            /* Uses Dynamic Viewport Height to account for mobile navigation bars */
-            height: 100dvh; 
-            overflow: hidden; 
+            height: 100dvh;
+            overflow: hidden;
         }
         
         #game-container { 
             width: 100%; 
-            max-width: 500px; 
+            max-width: 520px; 
             height: 100%;
             display: flex;
             flex-direction: column;
+            position: relative;
         }
         
+        /* Sticky Header */
         .header {
             text-align: center;
             background: var(--surface);
-            padding: 15px;
-            border-bottom: 3px solid #444;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            padding: 12px 15px;
+            border-bottom: 2px solid #333;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.6);
             position: relative;
             flex-shrink: 0;
         }
-        h1 { margin: 0 0 5px 0; color: var(--primary); font-size: 1.5em; }
-        #egg-count { font-size: 2em; font-weight: bold; }
-        #eps { color: var(--text-muted); font-size: 1em; }
-        
-        #golden-egg-count { 
-            color: var(--prestige); 
-            font-weight: bold; 
-            font-size: 1.1em;
-            margin-top: 8px; 
-            display: none; 
-            background: #332a00;
-            padding: 5px;
-            border-radius: 6px;
-            border: 1px solid var(--prestige);
-        }
+        h1 { margin: 0 0 4px 0; color: var(--primary); font-size: 1.35em; letter-spacing: 0.5px; }
+        #egg-count { font-size: 1.85em; font-weight: bold; color: #fff; }
+        #eps { color: var(--text-muted); font-size: 0.9em; margin-top: 2px; }
 
         #music-btn {
             position: absolute;
-            top: 15px;
+            top: 12px;
             right: 15px;
-            background: #444;
-            border: none;
+            background: #333;
+            border: 1px solid #555;
             color: white;
-            padding: 8px;
+            padding: 6px 10px;
             border-radius: 50%;
             cursor: pointer;
-            font-size: 1.2em;
+            font-size: 1em;
         }
         
-        .main-button-container {
-            padding: 15px;
+        /* Multi-Buy Sub-bar */
+        .sub-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #1a1a1a;
+            padding: 8px 15px;
+            border-bottom: 1px solid #333;
             flex-shrink: 0;
         }
-        .main-button {
+        .manual-gather-btn {
             background-color: var(--primary);
-            color: #fff;
+            color: #000;
             border: none;
-            padding: 15px;
-            font-size: 1.5em;
-            border-radius: 50px;
+            padding: 8px 16px;
+            font-size: 0.95em;
+            border-radius: 20px;
             cursor: pointer;
-            width: 100%;
             font-weight: bold;
             touch-action: manipulation;
         }
-        .main-button:active { transform: scale(0.95); }
+        .manual-gather-btn:active { transform: scale(0.95); }
 
+        .buy-pills { display: flex; gap: 4px; }
+        .pill-btn {
+            background: #2a2a2a;
+            color: var(--text-muted);
+            border: 1px solid #444;
+            padding: 6px 10px;
+            border-radius: 14px;
+            font-size: 0.8em;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .pill-btn.active {
+            background: var(--primary);
+            color: #000;
+            border-color: var(--primary);
+        }
+
+        /* Tabs */
         .tabs {
             display: flex;
             background: var(--surface);
-            border-bottom: 2px solid #444;
+            border-bottom: 2px solid #333;
             flex-shrink: 0;
         }
         .tab-btn {
             flex: 1;
-            padding: 15px 0;
+            padding: 12px 0;
             background: none;
             border: none;
             color: var(--text-muted);
             font-weight: bold;
-            font-size: 1.1em;
+            font-size: 0.85em;
             cursor: pointer;
+            text-align: center;
+            letter-spacing: 0.3px;
         }
         .tab-btn.active {
             color: var(--primary);
             border-bottom: 3px solid var(--primary);
+            background: rgba(243, 156, 18, 0.05);
         }
 
+        /* Scrollable Tab Area */
         .tab-content {
             display: none;
             flex: 1;
             overflow-y: auto;
-            padding: 15px;
-            /* Massive padding block to ensure bottom items clear mobile UI */
-            padding-bottom: 120px; 
+            padding: 12px;
+            padding-bottom: 130px; 
         }
         .tab-content.active { display: block; }
 
+        /* Generator Card (AdCap Style) */
+        .gen-card {
+            background-color: var(--surface);
+            margin-bottom: 12px;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .gen-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .gen-title { font-size: 1.05em; font-weight: bold; }
+        .gen-level { color: var(--primary); font-size: 0.9em; margin-left: 6px; }
+        .gen-milestone { font-size: 0.75em; color: var(--text-muted); }
+        
+        .gen-body {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .gen-progress-box {
+            flex: 1;
+            background: var(--progress-bg);
+            height: 38px;
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            border: 1px solid #444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .gen-progress-fill {
+            position: absolute;
+            top: 0; left: 0; height: 100%; width: 0%;
+            background: linear-gradient(90deg, #d35400, #f39c12);
+            transition: width 0.05s linear;
+        }
+        .gen-progress-text {
+            position: relative;
+            z-index: 2;
+            font-size: 0.85em;
+            font-weight: bold;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+            pointer-events: none;
+        }
+
+        .buy-btn {
+            background-color: #272727;
+            color: #fff;
+            border: 1px solid var(--primary);
+            padding: 10px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.85em;
+            min-width: 120px;
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .buy-btn:disabled { border-color: #444; color: #666; cursor: not-allowed; background-color: #1a1a1a; }
+        .buy-btn:hover:not(:disabled) { filter: brightness(1.15); }
+        .buy-btn-qty { font-size: 0.75em; color: var(--text-muted); font-weight: normal; }
+
+        /* Generic List Items (Managers, Upgrades, Prestige) */
         .list-item {
             background-color: var(--surface);
             margin-bottom: 10px;
@@ -134,43 +229,67 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-left: 5px solid var(--primary);
+            border-left: 4px solid var(--primary);
         }
         .list-item.manager { border-left-color: var(--manager); }
+        .list-item.upgrade { border-left-color: var(--upgrade); }
         .list-item.prestige-box { border-left-color: var(--prestige); flex-direction: column; text-align: center; }
         
-        .info h3 { margin: 0 0 4px 0; font-size: 1em; }
-        .stats { color: var(--text-muted); font-size: 0.85em; }
+        .info h3 { margin: 0 0 3px 0; font-size: 0.95em; }
+        .stats { color: var(--text-muted); font-size: 0.8em; }
         
-        .buy-btn {
-            background-color: #333;
-            color: #fff;
-            border: 1px solid var(--primary);
-            padding: 10px 15px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-            min-width: 90px;
-        }
-        .buy-btn.mgr-btn { border-color: var(--manager); }
-        .buy-btn.prestige-btn { border-color: var(--prestige); background-color: #332a00; color: var(--prestige); width: 100%; margin-top: 10px; padding: 15px; font-size: 1.1em; }
-        .buy-btn:disabled { border-color: #555; color: #777; cursor: not-allowed; background-color: #222; }
-        
-        .multi-buy-bar {
-            display: flex;
-            justify-content: space-between;
+        .buy-btn.mgr-btn { border-color: var(--manager); min-width: 110px; }
+        .buy-btn.upg-btn { border-color: var(--upgrade); min-width: 110px; }
+        .buy-btn.prestige-btn { 
+            border-color: var(--prestige); 
+            background-color: #332a00; 
+            color: var(--prestige); 
+            width: 100%; 
+            margin-top: 10px; 
+            padding: 15px; 
+            font-size: 1.05em; 
             align-items: center;
-            margin-bottom: 15px;
-            background: var(--surface);
-            padding: 10px;
-            border-radius: 8px;
         }
 
+        /* Hard Reset Danger Zone */
+        .danger-box {
+            border-left-color: var(--danger) !important;
+            margin-top: 30px;
+            background: #251212 !important;
+            border: 1px solid #5a1e1e !important;
+        }
+        .danger-btn {
+            background-color: #441414 !important;
+            border-color: var(--danger) !important;
+            color: #ff9999 !important;
+            width: 100%;
+            margin-top: 10px;
+            padding: 12px;
+            font-size: 0.95em;
+            align-items: center !important;
+        }
+        .danger-btn:hover {
+            background-color: var(--danger) !important;
+            color: #fff !important;
+        }
+
+        /* Particle Confetti */
+        .confetti-particle {
+            position: fixed;
+            pointer-events: none;
+            width: 7px;
+            height: 7px;
+            border-radius: 2px;
+            z-index: 9999;
+            transition: transform 0.8s cubic-bezier(0.1, 0.8, 0.3, 1), opacity 0.8s ease-out;
+        }
+
+        /* Offline Modal */
         #offline-modal {
             display: none;
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.85);
             z-index: 1000;
             justify-content: center;
             align-items: center;
@@ -181,12 +300,12 @@
             border-radius: 12px;
             text-align: center;
             border: 2px solid var(--primary);
-            width: 80%;
-            max-width: 300px;
+            width: 85%;
+            max-width: 320px;
         }
         .modal-content button {
             background: var(--primary);
-            color: white;
+            color: #000;
             border: none;
             padding: 10px 20px;
             border-radius: 6px;
@@ -207,43 +326,75 @@
         <button id="music-btn" onclick="toggleMusic()">🔇</button>
         <h1>Backyard Flock</h1>
         <div id="egg-count">0 Eggs</div>
-        <div id="eps">0 eggs / sec</div>
-        <div id="golden-egg-count">0 Golden Eggs (+0% Bonus)</div>
+        <div id="eps">Est: 0 eggs / sec</div>
     </div>
 
-    <div class="main-button-container">
-        <button class="main-button" onclick="manualClick()">🥚 Gather Egg</button>
+    <!-- Pinned Sub-Bar -->
+    <div class="sub-bar">
+        <button class="manual-gather-btn" onclick="manualClick(event)">🥚 Gather Egg</button>
+        <div class="buy-pills">
+            <button class="pill-btn active" id="pill-1" onclick="setBuyQty(1)">x1</button>
+            <button class="pill-btn" id="pill-5" onclick="setBuyQty(5)">x5</button>
+            <button class="pill-btn" id="pill-10" onclick="setBuyQty(10)">x10</button>
+            <button class="pill-btn" id="pill-100" onclick="setBuyQty(100)">x100</button>
+        </div>
     </div>
 
+    <!-- 4 Navigation Tabs -->
     <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('generators')">Generators</button>
+        <button class="tab-btn" onclick="switchTab('upgrades')">Upgrades</button>
         <button class="tab-btn" onclick="switchTab('managers')">Managers</button>
         <button class="tab-btn" onclick="switchTab('prestige')">Prestige</button>
     </div>
 
+    <!-- TAB 1: GENERATORS -->
     <div id="tab-generators" class="tab-content active">
-        <div class="multi-buy-bar">
-            <span style="font-weight:bold;">Purchase Quantity:</span>
-            <button class="buy-btn" id="buy-qty-btn" onclick="toggleBuyQty()">x1</button>
-        </div>
         <div id="upgrades-container"></div>
     </div>
 
+    <!-- TAB 2: UPGRADES -->
+    <div id="tab-upgrades" class="tab-content">
+        <div id="upgrades-list"></div>
+    </div>
+
+    <!-- TAB 3: MANAGERS -->
     <div id="tab-managers" class="tab-content">
         <div id="managers-container"></div>
     </div>
 
+    <!-- TAB 4: PRESTIGE -->
     <div id="tab-prestige" class="tab-content">
         <div class="list-item prestige-box">
             <div class="info">
                 <h3>Claim Golden Eggs</h3>
-                <div class="stats">Reset current progress to attract Golden Eggs. Each Golden Egg provides a permanent +10% boost.</div>
-                <div class="stats" style="margin-top:8px; font-weight:bold; color: var(--prestige);" id="prestige-preview">Golden Eggs to Claim: 0</div>
+                <div class="stats" style="margin: 8px 0; color: var(--prestige); font-weight:bold; font-size:1.1em;" id="prestige-current-bonus">
+                    0 Golden Eggs (+0% Production Bonus)
+                </div>
+                <div class="stats">Reset all progress to attract Golden Eggs. Each Golden Egg provides a permanent +10% boost to every generator.</div>
+                <div class="stats" style="margin-top:12px; font-weight:bold; color: var(--primary); font-size: 1.05em;" id="prestige-preview">
+                    Golden Eggs to Claim: 0
+                </div>
             </div>
-            <button class="buy-btn prestige-btn" id="prestige-btn" onclick="prestige()" disabled>Claim & Restart</button>
+            <button class="buy-btn prestige-btn" id="prestige-btn" onclick="prestige(event)" disabled>
+                Claim & Restart
+            </button>
         </div>
-        <div class="stats" style="text-align: center; margin-top: 20px;">
-            Total Lifetime Eggs Produced: <br><span id="lifetime-display" style="font-size:1.2em; color:#fff;">0</span>
+
+        <div class="stats" style="text-align: center; margin-top: 25px;">
+            Total Lifetime Eggs Produced: <br>
+            <span id="lifetime-display" style="font-size:1.2em; color:#fff; font-weight:bold;">0</span>
+        </div>
+
+        <!-- Danger Zone: Complete Hard Reset -->
+        <div class="list-item prestige-box danger-box">
+            <div class="info">
+                <h3 style="color: var(--danger);">Hard Reset (New Game)</h3>
+                <div class="stats">Permanently wipe all save data, including Golden Eggs and Lifetime Eggs, as if you are opening the game for the first time.</div>
+            </div>
+            <button class="buy-btn danger-btn" onclick="hardReset()">
+                Erase All Progress
+            </button>
         </div>
     </div>
 </div>
@@ -251,9 +402,9 @@
 <div id="offline-modal">
     <div class="modal-content">
         <h2 style="color: var(--primary); margin-top:0;">Welcome Back!</h2>
-        <p>While you were away, your flock kept working hard.</p>
-        <p style="font-size: 1.5em; font-weight: bold; margin: 10px 0;" id="offline-eggs-earned">0 Eggs</p>
-        <button onclick="closeOfflineModal()">Awesome!</button>
+        <p>While you were away, your flock kept laying eggs.</p>
+        <p style="font-size: 1.4em; font-weight: bold; margin: 10px 0; color: #fff;" id="offline-eggs-earned">0 Eggs</p>
+        <button onclick="closeOfflineModal()">Collect</button>
     </div>
 </div>
 
@@ -262,25 +413,42 @@
     let audioCtx = null;
     let musicPlaying = false;
 
-    function playClickSound() {
+    function initAudio() {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         if (audioCtx.state === 'suspended') audioCtx.resume();
-        
+    }
+
+    function playClickSound() {
+        initAudio();
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
-        
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(600, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.1);
-        
-        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-        
+        osc.frequency.setValueAtTime(520, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(280, audioCtx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
         osc.connect(gain);
         gain.connect(audioCtx.destination);
-        
         osc.start();
-        osc.stop(audioCtx.currentTime + 0.1);
+        osc.stop(audioCtx.currentTime + 0.08);
+    }
+
+    function playChimeSound() {
+        initAudio();
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((freq, idx) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            const start = audioCtx.currentTime + (idx * 0.07);
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, start);
+            gain.gain.setValueAtTime(0.12, start);
+            gain.gain.exponentialRampToValueAtTime(0.001, start + 0.25);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(start);
+            osc.stop(start + 0.25);
+        });
     }
 
     function toggleMusic() {
@@ -292,48 +460,317 @@
             btn.innerText = "🔇";
             musicPlaying = false;
         } else {
-            bgm.play().catch(e => console.log("Music play blocked, ensure file exists."));
+            bgm.play().catch(e => console.log("Music file missing or playback blocked."));
             btn.innerText = "🔊";
             musicPlaying = true;
         }
     }
 
-    // --- State ---
+    // --- Particle Confetti Effect ---
+    function triggerConfetti(x, y) {
+        const colors = ['#f39c12', '#f1c40f', '#2ecc71', '#e74c3c', '#9b59b6', '#3498db'];
+        for (let i = 0; i < 22; i++) {
+            const p = document.createElement('div');
+            p.className = 'confetti-particle';
+            p.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            p.style.left = `${x}px`;
+            p.style.top = `${y}px`;
+            document.body.appendChild(p);
+
+            const angle = Math.random() * Math.PI * 2;
+            const velocity = 40 + Math.random() * 80;
+            const destX = Math.cos(angle) * velocity;
+            const destY = Math.sin(angle) * velocity;
+
+            requestAnimationFrame(() => {
+                p.style.transform = `translate(${destX}px, ${destY}px) scale(0)`;
+                p.style.opacity = '0';
+            });
+
+            setTimeout(() => p.remove(), 850);
+        }
+    }
+
+    // --- Number Formatting (Full Word Notation) ---
+    const WORD_POWERS = [
+        { val: 1e33, word: "Decillion" },
+        { val: 1e30, word: "Nonillion" },
+        { val: 1e27, word: "Octillion" },
+        { val: 1e24, word: "Septillion" },
+        { val: 1e21, word: "Sextillion" },
+        { val: 1e18, word: "Quintillion" },
+        { val: 1e15, word: "Quadrillion" },
+        { val: 1e12, word: "Trillion" },
+        { val: 1e9,  word: "Billion" },
+        { val: 1e6,  word: "Million" }
+    ];
+
+    function formatFullWords(num) {
+        if (num < 1000000) {
+            return Math.floor(num).toLocaleString('en-US');
+        }
+        for (let i = 0; i < WORD_POWERS.length; i++) {
+            if (num >= WORD_POWERS[i].val) {
+                const scaled = num / WORD_POWERS[i].val;
+                return `${scaled.toFixed(3)} ${WORD_POWERS[i].word}`;
+            }
+        }
+        return num.toExponential(3);
+    }
+
+    function formatTime(seconds) {
+        if (seconds < 1) return `${(seconds).toFixed(2)}s`;
+        if (seconds < 60) return `${(seconds).toFixed(1)}s`;
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}m ${secs}s`;
+    }
+
+    // --- State & Balancing ---
     let eggs = 0;
     let lifetimeEggs = 0; 
     let goldenEggs = 0; 
-    let gameSpeed = 100;
     let lastSaveTime = Date.now();
     let buyQty = 1; 
     
     const COST_MULTIPLIER = 1.15;
 
     let generators = [
-        { id: 'chick', name: 'Chick', baseCost: 10, baseProd: 1, owned: 0 },
-        { id: 'coop', name: 'Backyard Coop', baseCost: 100, baseProd: 10, owned: 0 },
-        { id: 'enclosure', name: 'Walk-in Enclosure', baseCost: 1200, baseProd: 100, owned: 0 },
-        { id: 'paddock', name: 'Solar-Fenced Paddock', baseCost: 15000, baseProd: 800, owned: 0 },
-        { id: 'barn', name: 'Free-Range Barn', baseCost: 200000, baseProd: 6500, owned: 0 },
-        { id: 'farm', name: 'Commercial Farm', baseCost: 2500000, baseProd: 50000, owned: 0 }
+        { id: 'chick', name: 'Chick', baseCost: 10, baseProd: 1, baseTime: 0.6, owned: 0, progress: 0, isRunning: false, automated: false },
+        { id: 'coop', name: 'Backyard Coop', baseCost: 100, baseProd: 12, baseTime: 3.0, owned: 0, progress: 0, isRunning: false, automated: false },
+        { id: 'enclosure', name: 'Walk-in Enclosure', baseCost: 1200, baseProd: 140, baseTime: 8.0, owned: 0, progress: 0, isRunning: false, automated: false },
+        { id: 'paddock', name: 'Solar-Fenced Paddock', baseCost: 15000, baseProd: 1200, baseTime: 24.0, owned: 0, progress: 0, isRunning: false, automated: false },
+        { id: 'barn', name: 'Free-Range Barn', baseCost: 200000, baseProd: 9500, baseTime: 96.0, owned: 0, progress: 0, isRunning: false, automated: false },
+        { id: 'farm', name: 'Commercial Farm', baseCost: 2500000, baseProd: 75000, baseTime: 384.0, owned: 0, progress: 0, isRunning: false, automated: false }
     ];
 
     let managers = [
-        { id: 'm1', name: 'Annie', cost: 5000, desc: 'Chick production x2', bought: false },
-        { id: 'm2', name: 'Lunae', cost: 50000, desc: 'Coop production x2', bought: false },
-        { id: 'm3', name: 'Cleo', cost: 500000, desc: 'Enclosure production x2', bought: false },
-        { id: 'm4', name: 'Myel', cost: 5000000, desc: 'Paddock production x2', bought: false },
-        { id: 'm5', name: 'CoCo', cost: 50000000, desc: 'Barn production x2', bought: false },
-        { id: 'm6', name: 'Rhiannon', cost: 500000000, desc: 'Farm production x2', bought: false },
-        { id: 'm7', name: 'Bertha', cost: 1000000000, desc: 'Global Egg production +50%', bought: false },
-        { id: 'm8', name: 'Violet', cost: 10000000000, desc: 'Game runs 25% faster', bought: false },
-        { id: 'm9', name: 'Marianne', cost: 50000000000, desc: 'Manual clicks yield 100x eggs', bought: false },
-        { id: 'm10', name: 'Cranberry', cost: 500000000000, desc: 'Global Egg production +200%', bought: false },
-        { id: 'm11', name: 'Clarabelle', cost: 5000000000000, desc: 'Global Egg production x10', bought: false }
+        { id: 'm1', name: 'Annie', cost: 1000, desc: 'Automates Chick production', bought: false, targetGen: 0 },
+        { id: 'm2', name: 'Lunae', cost: 25000, desc: 'Automates Backyard Coop', bought: false, targetGen: 1 },
+        { id: 'm3', name: 'Cleo', cost: 500000, desc: 'Automates Walk-in Enclosure', bought: false, targetGen: 2 },
+        { id: 'm4', name: 'Myel', cost: 10000000, desc: 'Automates Solar-Fenced Paddock', bought: false, targetGen: 3 },
+        { id: 'm5', name: 'CoCo', cost: 250000000, desc: 'Automates Free-Range Barn', bought: false, targetGen: 4 },
+        { id: 'm6', name: 'Rhiannon', cost: 5000000000, desc: 'Automates Commercial Farm', bought: false, targetGen: 5 },
+        { id: 'm7', name: 'Bertha', cost: 50000000000, desc: 'Global Egg production +50%', bought: false, targetGen: -1 },
+        { id: 'm8', name: 'Violet', cost: 250000000000, desc: 'All cycles run 25% faster', bought: false, targetGen: -1 },
+        { id: 'm9', name: 'Marianne', cost: 1000000000000, desc: 'Gather Egg button yields x100', bought: false, targetGen: -1 },
+        { id: 'm10', name: 'Cranberry', cost: 10000000000000, desc: 'Global Egg production +200%', bought: false, targetGen: -1 },
+        { id: 'm11', name: 'Clarabelle', cost: 100000000000000, desc: 'Global Egg production x10', bought: false, targetGen: -1 }
     ];
 
-    function getManagerBought(id) {
-        const mgr = managers.find(m => m.id === id);
-        return mgr ? mgr.bought : false;
+    let upgrades = [
+        // Chick
+        { id: 'u_c_d1', name: 'Chick Feed Discount I', targetGen: 0, type: 'discount', value: 0.10, cost: 250, desc: 'Chicks cost 10% less', bought: false },
+        { id: 'u_c_m1', name: 'Chick Growth Hormones I', targetGen: 0, type: 'mult', value: 2, cost: 500, desc: 'Chick production x2', bought: false },
+        { id: 'u_c_d2', name: 'Chick Feed Discount II', targetGen: 0, type: 'discount', value: 0.25, cost: 2500, desc: 'Chicks cost 25% less', bought: false },
+        { id: 'u_c_m2', name: 'Chick Growth Hormones II', targetGen: 0, type: 'mult', value: 5, cost: 10000, desc: 'Chick production x5', bought: false },
+        { id: 'u_c_d3', name: 'Chick Wholesale Bulk', targetGen: 0, type: 'discount', value: 0.50, cost: 50000, desc: 'Chicks cost 50% less', bought: false },
+        { id: 'u_c_m3', name: 'Golden Roost Incubation', targetGen: 0, type: 'mult', value: 10, cost: 250000, desc: 'Chick production x10', bought: false },
+
+        // Coop
+        { id: 'u_cp_d1', name: 'Lumber Bulk Rebate I', targetGen: 1, type: 'discount', value: 0.10, cost: 2500, desc: 'Coops cost 10% less', bought: false },
+        { id: 'u_cp_m1', name: 'Insulated Nesting Boxes I', targetGen: 1, type: 'mult', value: 2, cost: 5000, desc: 'Coop production x2', bought: false },
+        { id: 'u_cp_d2', name: 'Lumber Bulk Rebate II', targetGen: 1, type: 'discount', value: 0.25, cost: 25000, desc: 'Coops cost 25% less', bought: false },
+        { id: 'u_cp_m2', name: 'Insulated Nesting Boxes II', targetGen: 1, type: 'mult', value: 5, cost: 100000, desc: 'Coop production x5', bought: false },
+        { id: 'u_cp_d3', name: 'Prefab Assembly Kits', targetGen: 1, type: 'discount', value: 0.50, cost: 500000, desc: 'Coops cost 50% less', bought: false },
+        { id: 'u_cp_m3', name: 'Heated Perches', targetGen: 1, type: 'mult', value: 10, cost: 2500000, desc: 'Coop production x10', bought: false },
+
+        // Enclosure
+        { id: 'u_e_d1', name: 'Hardware Cloth Sale I', targetGen: 2, type: 'discount', value: 0.10, cost: 30000, desc: 'Walk-ins cost 10% less', bought: false },
+        { id: 'u_e_m1', name: 'Automatic Waterers I', targetGen: 2, type: 'mult', value: 2, cost: 60000, desc: 'Walk-in production x2', bought: false },
+        { id: 'u_e_d2', name: 'Hardware Cloth Sale II', targetGen: 2, type: 'discount', value: 0.25, cost: 300000, desc: 'Walk-ins cost 25% less', bought: false },
+        { id: 'u_e_m2', name: 'Automatic Waterers II', targetGen: 2, type: 'mult', value: 5, cost: 1200000, desc: 'Walk-in production x5', bought: false },
+        { id: 'u_e_d3', name: 'Welded Frame Construction', targetGen: 2, type: 'discount', value: 0.50, cost: 6000000, desc: 'Walk-ins cost 50% less', bought: false },
+        { id: 'u_e_m3', name: 'Predator-Proof Fortification', targetGen: 2, type: 'mult', value: 10, cost: 30000000, desc: 'Walk-in production x10', bought: false },
+
+        // Paddock
+        { id: 'u_p_d1', name: 'Solar Charger Clearance I', targetGen: 3, type: 'discount', value: 0.10, cost: 375000, desc: 'Paddocks cost 10% less', bought: false },
+        { id: 'u_p_m1', name: 'Rotational Grazing I', targetGen: 3, type: 'mult', value: 2, cost: 750000, desc: 'Paddock production x2', bought: false },
+        { id: 'u_p_d2', name: 'Solar Charger Clearance II', targetGen: 3, type: 'discount', value: 0.25, cost: 3750000, desc: 'Paddocks cost 25% less', bought: false },
+        { id: 'u_p_m2', name: 'Rotational Grazing II', targetGen: 3, type: 'mult', value: 5, cost: 15000000, desc: 'Paddock production x5', bought: false },
+        { id: 'u_p_d3', name: 'High-Tensile Wire Mesh', targetGen: 3, type: 'discount', value: 0.50, cost: 75000000, desc: 'Paddocks cost 50% less', bought: false },
+        { id: 'u_p_m3', name: 'Alfalfa Clover Seed Mix', targetGen: 3, type: 'mult', value: 10, cost: 375000000, desc: 'Paddock production x10', bought: false },
+
+        // Barn
+        { id: 'u_b_d1', name: 'Barn Architecture Grant I', targetGen: 4, type: 'discount', value: 0.10, cost: 5000000, desc: 'Barns cost 10% less', bought: false },
+        { id: 'u_b_m1', name: 'Ventilation Fans I', targetGen: 4, type: 'mult', value: 2, cost: 10000000, desc: 'Barn production x2', bought: false },
+        { id: 'u_b_d2', name: 'Barn Architecture Grant II', targetGen: 4, type: 'discount', value: 0.25, cost: 50000000, desc: 'Barns cost 25% less', bought: false },
+        { id: 'u_b_m2', name: 'Ventilation Fans II', targetGen: 4, type: 'mult', value: 5, cost: 200000000, desc: 'Barn production x5', bought: false },
+        { id: 'u_b_d3', name: 'Steel Truss Foundations', targetGen: 4, type: 'discount', value: 0.50, cost: 1000000000, desc: 'Barns cost 50% less', bought: false },
+        { id: 'u_b_m3', name: 'Climate-Controlled Lofts', targetGen: 4, type: 'mult', value: 10, cost: 5000000000, desc: 'Barn production x10', bought: false },
+
+        // Farm
+        { id: 'u_f_d1', name: 'Commercial Subsidy I', targetGen: 5, type: 'discount', value: 0.10, cost: 62500000, desc: 'Farms cost 10% less', bought: false },
+        { id: 'u_f_m1', name: 'Conveyor Egg Belts I', targetGen: 5, type: 'mult', value: 2, cost: 125000000, desc: 'Farm production x2', bought: false },
+        { id: 'u_f_d2', name: 'Commercial Subsidy II', targetGen: 5, type: 'discount', value: 0.25, cost: 625000000, desc: 'Farms cost 25% less', bought: false },
+        { id: 'u_f_m2', name: 'Conveyor Egg Belts II', targetGen: 5, type: 'mult', value: 5, cost: 2500000000, desc: 'Farm production x5', bought: false },
+        { id: 'u_f_d3', name: 'Industrial Land Zoning', targetGen: 5, type: 'discount', value: 0.50, cost: 12500000000, desc: 'Farms cost 50% less', bought: false },
+        { id: 'u_f_m3', name: 'Automated Sorting Plant', targetGen: 5, type: 'mult', value: 10, cost: 62500000000, desc: 'Farm production x10', bought: false }
+    ];
+
+    // --- Math & Calculation Engine ---
+    function getPrestigeMultiplier() { 
+        return 1 + (goldenEggs * 0.10); 
+    }
+
+    function getGlobalMultiplier() {
+        let mult = 1;
+        const bertha = managers.find(m => m.id === 'm7');
+        const cranberry = managers.find(m => m.id === 'm10');
+        const clarabelle = managers.find(m => m.id === 'm11');
+        if (bertha && bertha.bought) mult *= 1.5;
+        if (cranberry && cranberry.bought) mult *= 3.0;
+        if (clarabelle && clarabelle.bought) mult *= 10.0;
+        return mult * getPrestigeMultiplier();
+    }
+
+    function getGenDiscount(genIndex) {
+        let discount = 0;
+        upgrades.forEach(u => {
+            if (u.targetGen === genIndex && u.type === 'discount' && u.bought) {
+                discount = Math.max(discount, u.value);
+            }
+        });
+        return 1 - discount;
+    }
+
+    function getGenMultiplier(genIndex) {
+        let mult = 1;
+        upgrades.forEach(u => {
+            if (u.targetGen === genIndex && u.type === 'mult' && u.bought) {
+                mult *= u.value;
+            }
+        });
+        return mult;
+    }
+
+    function getMilestoneSpeedMultiplier(owned) {
+        let speed = 1;
+        if (owned >= 25) speed *= 2;
+        if (owned >= 50) speed *= 2;
+        if (owned >= 100) speed *= 2;
+        if (owned >= 200) speed *= 2;
+        if (owned >= 300) speed *= 2;
+        return speed;
+    }
+
+    function getNextMilestone(owned) {
+        if (owned < 25) return 25;
+        if (owned < 50) return 50;
+        if (owned < 100) return 100;
+        if (owned < 200) return 200;
+        if (owned < 300) return 300;
+        return owned + 100;
+    }
+
+    function getCycleTime(gen) {
+        const violet = managers.find(m => m.id === 'm8');
+        const globalSpeed = (violet && violet.bought) ? 1.25 : 1.0;
+        const milestoneSpeed = getMilestoneSpeedMultiplier(gen.owned);
+        return Math.max(0.08, gen.baseTime / (milestoneSpeed * globalSpeed));
+    }
+
+    function getCyclePayout(gen, index) {
+        if (gen.owned === 0) return 0;
+        const genMult = getGenMultiplier(index);
+        const globalMult = getGlobalMultiplier();
+        return gen.owned * gen.baseProd * genMult * globalMult;
+    }
+
+    function getBatchCost(gen, genIndex, amount) {
+        const discountedBase = gen.baseCost * getGenDiscount(genIndex);
+        const currentCost = discountedBase * Math.pow(COST_MULTIPLIER, gen.owned);
+        if (amount === 1) return currentCost;
+        return currentCost * ((Math.pow(COST_MULTIPLIER, amount) - 1) / (COST_MULTIPLIER - 1));
+    }
+
+    function getEstimatedEPS() {
+        let eps = 0;
+        generators.forEach((gen, idx) => {
+            if (gen.owned > 0 && gen.automated) {
+                const payout = getCyclePayout(gen, idx);
+                const time = getCycleTime(gen);
+                eps += (payout / time);
+            }
+        });
+        return eps;
+    }
+
+    // --- Actions ---
+    function manualClick(e) {
+        playClickSound();
+        const marianne = managers.find(m => m.id === 'm9');
+        let clickVal = 1 * getGlobalMultiplier();
+        if (marianne && marianne.bought) clickVal *= 100;
+        
+        eggs += clickVal;
+        lifetimeEggs += clickVal;
+        updateUI();
+    }
+
+    function startCycle(index) {
+        const gen = generators[index];
+        if (gen.owned > 0 && !gen.isRunning) {
+            playClickSound();
+            gen.isRunning = true;
+            gen.progress = 0;
+        }
+    }
+
+    function buyGenerator(index, e) {
+        const gen = generators[index];
+        const cost = getBatchCost(gen, index, buyQty);
+        if (eggs >= cost) {
+            playChimeSound();
+            if (e) triggerConfetti(e.clientX, e.clientY);
+            eggs -= cost;
+            gen.owned += buyQty;
+            renderGenerators();
+            updateUI();
+        }
+    }
+
+    function buyUpgrade(index, e) {
+        const upg = upgrades[index];
+        if (eggs >= upg.cost && !upg.bought) {
+            playChimeSound();
+            if (e) triggerConfetti(e.clientX, e.clientY);
+            eggs -= upg.cost;
+            upg.bought = true;
+            renderUpgrades();
+            renderGenerators();
+            updateUI();
+        }
+    }
+
+    function buyManager(index, e) {
+        const mgr = managers[index];
+        if (eggs >= mgr.cost && !mgr.bought) {
+            playChimeSound();
+            if (e) triggerConfetti(e.clientX, e.clientY);
+            eggs -= mgr.cost;
+            mgr.bought = true;
+            
+            if (mgr.targetGen >= 0) {
+                generators[mgr.targetGen].automated = true;
+                if (!generators[mgr.targetGen].isRunning) {
+                    generators[mgr.targetGen].isRunning = true;
+                    generators[mgr.targetGen].progress = 0;
+                }
+            }
+            renderManagers();
+            renderGenerators();
+            updateUI();
+        }
+    }
+
+    function setBuyQty(qty) {
+        playClickSound();
+        buyQty = qty;
+        document.querySelectorAll('.pill-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`pill-${qty}`).classList.add('active');
+        renderGenerators();
+        updateUI();
     }
 
     function switchTab(tabId) {
@@ -343,25 +780,60 @@
         
         document.getElementById(`tab-${tabId}`).classList.add('active');
         event.currentTarget.classList.add('active');
-        renderGenerators();
-        renderManagers();
+        if (tabId === 'generators') renderGenerators();
+        if (tabId === 'upgrades') renderUpgrades();
+        if (tabId === 'managers') renderManagers();
     }
 
-    function toggleBuyQty() {
+    // --- Prestige Engine ---
+    function calculatePendingGoldenEggs() {
+        const totalEarnable = Math.floor(Math.sqrt(lifetimeEggs / 100));
+        return Math.max(0, totalEarnable - goldenEggs);
+    }
+
+    function prestige(e) {
+        const pending = calculatePendingGoldenEggs();
+        if (pending > 0 && confirm(`Claim ${formatFullWords(pending)} Golden Eggs and reset your flock? (Lifetime Eggs will not reset).`)) {
+            playChimeSound();
+            if (e) triggerConfetti(e.clientX, e.clientY);
+            goldenEggs += pending;
+            eggs = 0;
+            generators.forEach(g => {
+                g.owned = 0;
+                g.progress = 0;
+                g.isRunning = false;
+                g.automated = false;
+            });
+            managers.forEach(m => m.bought = false);
+            upgrades.forEach(u => u.bought = false);
+
+            renderGenerators();
+            renderUpgrades();
+            renderManagers();
+            saveGame();
+            updateUI();
+        }
+    }
+
+    // --- Hard Reset (Full Day 1 Wipe) ---
+    function hardReset() {
         playClickSound();
-        if (buyQty === 1) buyQty = 5;
-        else if (buyQty === 5) buyQty = 10;
-        else if (buyQty === 10) buyQty = 100;
-        else buyQty = 1;
-        
-        document.getElementById('buy-qty-btn').innerText = `x${buyQty}`;
-        renderGenerators();
-        updateUI();
+        const confirm1 = confirm("WARNING: Are you sure you want to completely erase ALL progress? This will reset all Eggs, Golden Eggs, Upgrades, and Managers.");
+        if (confirm1) {
+            const confirm2 = confirm("FINAL WARNING: This is irreversible and wipes everything back to Day 1. Are you 100% sure?");
+            if (confirm2) {
+                // Remove all save data across all prior versions
+                ['backyardFlockSave', 'backyardFlockSave2', 'backyardFlockSave3', 'backyardFlockSave4', 'backyardFlockSave5', 'backyardFlockSave6', 'backyardFlockSave7'].forEach(key => {
+                    localStorage.removeItem(key);
+                });
+                location.reload();
+            }
+        }
     }
 
+    // --- Save & Offline Processing ---
     function loadGame() {
-        // Kept on Save 6 so it perfectly aligns with your phone's memory
-        const savedData = localStorage.getItem('backyardFlockSave6');
+        const savedData = localStorage.getItem('backyardFlockSave7');
         if (savedData) {
             const data = JSON.parse(savedData);
             eggs = data.eggs || 0;
@@ -370,42 +842,51 @@
             lastSaveTime = data.lastSaveTime || Date.now();
             
             generators.forEach((g, i) => { 
-                if (data.generators[i]) {
-                    g.owned = data.generators[i].owned;
+                if (data.generators && data.generators[i]) {
+                    g.owned = data.generators[i].owned || 0;
+                    g.automated = data.generators[i].automated || false;
+                    if (g.automated && g.owned > 0) g.isRunning = true;
                 }
             });
-            // Safely map saved managers by ID so index changes don't break the save
             if (data.managers) {
                 data.managers.forEach(savedMgr => {
                     const mgr = managers.find(m => m.id === savedMgr.id);
-                    if (mgr) {
-                        mgr.bought = savedMgr.bought;
-                    }
+                    if (mgr) mgr.bought = savedMgr.bought;
                 });
             }
-            
+            if (data.upgrades) {
+                data.upgrades.forEach(savedUpg => {
+                    const upg = upgrades.find(u => u.id === savedUpg.id);
+                    if (upg) upg.bought = savedUpg.bought;
+                });
+            }
             calculateOfflineGains();
         }
-        gameSpeed = getManagerBought('m8') ? 75 : 100; // Violet
-        setInterval(gameLoop, gameSpeed);
     }
 
     function saveGame() {
         lastSaveTime = Date.now();
-        localStorage.setItem('backyardFlockSave6', JSON.stringify({ 
-            eggs, lifetimeEggs, goldenEggs, generators, managers, lastSaveTime 
+        localStorage.setItem('backyardFlockSave7', JSON.stringify({ 
+            eggs, lifetimeEggs, goldenEggs, generators, managers, upgrades, lastSaveTime 
         }));
     }
 
     function calculateOfflineGains() {
         const now = Date.now();
         const diffSeconds = (now - lastSaveTime) / 1000;
-        if (diffSeconds > 60) { 
-            const offlineGains = getEPS() * diffSeconds;
+        if (diffSeconds > 30) {
+            let offlineGains = 0;
+            generators.forEach((gen, idx) => {
+                if (gen.owned > 0 && gen.automated) {
+                    const payout = getCyclePayout(gen, idx);
+                    const time = getCycleTime(gen);
+                    offlineGains += (payout / time) * diffSeconds;
+                }
+            });
             if (offlineGains > 0) {
                 eggs += offlineGains;
                 lifetimeEggs += offlineGains;
-                document.getElementById('offline-eggs-earned').innerText = format(offlineGains) + " Eggs";
+                document.getElementById('offline-eggs-earned').innerText = `${formatFullWords(offlineGains)} Eggs`;
                 document.getElementById('offline-modal').style.display = 'flex';
             }
         }
@@ -417,118 +898,69 @@
         updateUI();
     }
 
-    function getBatchCost(gen, amount) {
-        const currentCost = gen.baseCost * Math.pow(COST_MULTIPLIER, gen.owned);
-        if (amount === 1) return currentCost;
-        return currentCost * ((Math.pow(COST_MULTIPLIER, amount) - 1) / (COST_MULTIPLIER - 1));
-    }
-
-    function getPrestigeMultiplier() { return 1 + (goldenEggs * 0.10); }
-
-    function getGlobalMultiplier() {
-        let mult = 1;
-        if (getManagerBought('m7')) mult *= 1.5; // Bertha
-        if (getManagerBought('m10')) mult *= 3;   // Cranberry
-        if (getManagerBought('m11')) mult *= 10;  // Clarabelle
-        return mult * getPrestigeMultiplier();
-    }
-
-    function getEPS() {
-        let eps = 0;
-        const globalMult = getGlobalMultiplier();
-        generators.forEach((gen, index) => {
-            let genMult = 1;
-            if (index === 0 && getManagerBought('m1')) genMult *= 2; 
-            if (index === 1 && getManagerBought('m2')) genMult *= 2; 
-            if (index === 2 && getManagerBought('m3')) genMult *= 2; 
-            if (index === 3 && getManagerBought('m4')) genMult *= 2; 
-            if (index === 4 && getManagerBought('m5')) genMult *= 2; 
-            if (index === 5 && getManagerBought('m6')) genMult *= 2; 
-            eps += (gen.owned * gen.baseProd * genMult * globalMult);
-        });
-        return eps;
-    }
-
-    function manualClick() {
-        playClickSound();
-        let clickVal = 1 * getGlobalMultiplier();
-        if (getManagerBought('m9')) clickVal *= 100; // Marianne
-        eggs += clickVal;
-        lifetimeEggs += clickVal;
-        updateUI();
-    }
-
-    function buyGenerator(index) {
-        playClickSound();
-        const gen = generators[index];
-        const cost = getBatchCost(gen, buyQty);
-        if (eggs >= cost) {
-            eggs -= cost;
-            gen.owned += buyQty;
-            renderGenerators();
-            updateUI();
-        }
-    }
-
-    function buyManager(index) {
-        playClickSound();
-        const mgr = managers[index];
-        if (eggs >= mgr.cost && !mgr.bought) {
-            eggs -= mgr.cost;
-            mgr.bought = true;
-            renderManagers();
-            renderGenerators(); 
-            updateUI();
-        }
-    }
-
-    function calculatePendingGoldenEggs() {
-        const totalEarnable = Math.floor(Math.sqrt(lifetimeEggs / 100));
-        return Math.max(0, totalEarnable - goldenEggs);
-    }
-
-    function prestige() {
-        playClickSound();
-        const pending = calculatePendingGoldenEggs();
-        if (pending > 0 && confirm(`Are you sure you want to restart? You will lose buildings and managers, but gain ${pending} Golden Eggs.`)) {
-            goldenEggs += pending;
-            eggs = 0;
-            generators.forEach(g => { g.owned = 0; });
-            managers.forEach(m => m.bought = false);
-            renderGenerators();
-            renderManagers();
-            saveGame();
-            updateUI();
-        }
-    }
-
-    function format(num) {
-        if (num < 1000) return Math.floor(num).toString();
-        const suffixes = ["", "k", "M", "B", "T", "Qa", "Qi", "Sx"];
-        const suffixNum = Math.floor(("" + Math.floor(num)).length / 3);
-        let shortValue = parseFloat((suffixNum != 0 ? (num / Math.pow(1000, suffixNum)) : num).toPrecision(3));
-        if (shortValue % 1 != 0) shortValue = shortValue.toFixed(1);
-        return shortValue + suffixes[suffixNum];
-    }
-
+    // --- Rendering Functions ---
     function renderGenerators() {
         const container = document.getElementById('upgrades-container');
         if (!container.parentElement.classList.contains('active')) return;
         
         container.innerHTML = '';
         generators.forEach((gen, index) => {
+            const cycleTime = getCycleTime(gen);
+            const payout = getCyclePayout(gen, index);
+            const cost = getBatchCost(gen, index, buyQty);
+            const nextMilestone = getNextMilestone(gen.owned);
+
             container.innerHTML += `
-                <div class="list-item">
-                    <div class="info">
-                        <h3>${gen.name} (${gen.owned})</h3>
-                        <div class="stats">Base: +${format(gen.baseProd)}/s</div>
+                <div class="gen-card">
+                    <div class="gen-header">
+                        <div>
+                            <span class="gen-title">${gen.name}</span>
+                            <span class="gen-level">x${gen.owned}</span>
+                        </div>
+                        <span class="gen-milestone">Next Speed: ${gen.owned}/${nextMilestone}</span>
                     </div>
-                    <button class="buy-btn" id="btn-gen-${index}" onclick="buyGenerator(${index})">
-                        ${format(getBatchCost(gen, buyQty))}
-                    </button>
+                    <div class="gen-body">
+                        <div class="gen-progress-box" onclick="startCycle(${index})">
+                            <div class="gen-progress-fill" id="pfill-${index}" style="width: ${gen.progress * 100}%;"></div>
+                            <div class="gen-progress-text" id="ptext-${index}">
+                                +${formatFullWords(payout)} Eggs (${formatTime(cycleTime)})
+                            </div>
+                        </div>
+                        <button class="buy-btn" id="btn-gen-${index}" onclick="buyGenerator(${index}, event)">
+                            <span>${formatFullWords(cost)}</span>
+                            <span class="buy-btn-qty">Buy x${buyQty}</span>
+                        </button>
+                    </div>
                 </div>
             `;
         });
+    }
+
+    function renderUpgrades() {
+        const container = document.getElementById('upgrades-list');
+        if (!container.parentElement.classList.contains('active')) return;
+        
+        container.innerHTML = '';
+        let unbought = 0;
+        upgrades.forEach((upg, index) => {
+            if (!upg.bought) {
+                unbought++;
+                container.innerHTML += `
+                    <div class="list-item upgrade">
+                        <div class="info">
+                            <h3>${upg.name}</h3>
+                            <div class="stats">${upg.desc}</div>
+                        </div>
+                        <button class="buy-btn upg-btn" id="btn-upg-${index}" onclick="buyUpgrade(${index}, event)">
+                            <span>${formatFullWords(upg.cost)}</span>
+                        </button>
+                    </div>
+                `;
+            }
+        });
+        if (unbought === 0) {
+            container.innerHTML = '<div class="stats" style="text-align:center; padding: 25px;">All upgrades purchased!</div>';
+        }
     }
 
     function renderManagers() {
@@ -536,44 +968,45 @@
         if (!container.parentElement.classList.contains('active')) return;
         
         container.innerHTML = '';
+        let unbought = 0;
         managers.forEach((mgr, index) => {
             if (!mgr.bought) {
+                unbought++;
                 container.innerHTML += `
                     <div class="list-item manager">
                         <div class="info">
                             <h3>${mgr.name}</h3>
                             <div class="stats">${mgr.desc}</div>
                         </div>
-                        <button class="buy-btn mgr-btn" id="btn-mgr-${index}" onclick="buyManager(${index})">
-                            ${format(mgr.cost)}
+                        <button class="buy-btn mgr-btn" id="btn-mgr-${index}" onclick="buyManager(${index}, event)">
+                            <span>${formatFullWords(mgr.cost)}</span>
                         </button>
                     </div>
                 `;
             }
         });
-        if (container.innerHTML === '') container.innerHTML = '<div class="stats" style="text-align:center;">All managers hired!</div>';
+        if (unbought === 0) {
+            container.innerHTML = '<div class="stats" style="text-align:center; padding: 25px;">All managers hired!</div>';
+        }
     }
 
     function updateUI() {
-        document.getElementById('egg-count').innerText = format(eggs) + ' Eggs';
-        const speedMultiplier = 100 / gameSpeed; 
-        document.getElementById('eps').innerText = format(getEPS() * speedMultiplier) + ' eggs / sec';
-        
-        if (goldenEggs > 0) {
-            const geDiv = document.getElementById('golden-egg-count');
-            geDiv.style.display = 'inline-block';
-            geDiv.innerText = `${format(goldenEggs)} Golden Eggs (+${format(goldenEggs * 10)}% Bonus)`;
-        }
-
-        document.getElementById('lifetime-display').innerText = format(lifetimeEggs);
+        document.getElementById('egg-count').innerText = `${formatFullWords(eggs)} Eggs`;
+        document.getElementById('eps').innerText = `Est: +${formatFullWords(getEstimatedEPS())} eggs/sec`;
+        document.getElementById('lifetime-display').innerText = formatFullWords(lifetimeEggs);
         
         const pendingGE = calculatePendingGoldenEggs();
-        document.getElementById('prestige-preview').innerText = `Golden Eggs to Claim: ${format(pendingGE)}`;
+        document.getElementById('prestige-preview').innerText = `Golden Eggs to Claim: ${formatFullWords(pendingGE)}`;
+        document.getElementById('prestige-current-bonus').innerText = `${formatFullWords(goldenEggs)} Golden Eggs (+${formatFullWords(goldenEggs * 10)}% Production Bonus)`;
         document.getElementById('prestige-btn').disabled = (pendingGE <= 0);
 
         generators.forEach((gen, index) => {
             const btn = document.getElementById(`btn-gen-${index}`);
-            if (btn) btn.disabled = eggs < getBatchCost(gen, buyQty);
+            if (btn) btn.disabled = eggs < getBatchCost(gen, index, buyQty);
+        });
+        upgrades.forEach((upg, index) => {
+            const btn = document.getElementById(`btn-upg-${index}`);
+            if (btn) btn.disabled = eggs < upg.cost;
         });
         managers.forEach((mgr, index) => {
             const btn = document.getElementById(`btn-mgr-${index}`);
@@ -581,17 +1014,54 @@
         });
     }
 
-    function gameLoop() {
-        const production = getEPS() / 10;
-        eggs += production;
-        lifetimeEggs += production;
+    // --- Main Game Loop ---
+    let lastTick = performance.now();
+
+    function gameLoop(now) {
+        const dt = (now - lastTick) / 1000;
+        lastTick = now;
+
+        generators.forEach((gen, index) => {
+            if (gen.owned > 0) {
+                const cycleTime = getCycleTime(gen);
+
+                if (gen.automated && !gen.isRunning) {
+                    gen.isRunning = true;
+                    gen.progress = 0;
+                }
+
+                if (gen.isRunning) {
+                    gen.progress += (dt / cycleTime);
+                    if (gen.progress >= 1) {
+                        const payout = getCyclePayout(gen, index);
+                        eggs += payout;
+                        lifetimeEggs += payout;
+
+                        if (gen.automated) {
+                            gen.progress %= 1;
+                        } else {
+                            gen.progress = 0;
+                            gen.isRunning = false;
+                        }
+                    }
+
+                    const pFill = document.getElementById(`pfill-${index}`);
+                    if (pFill) pFill.style.width = `${Math.min(100, gen.progress * 100)}%`;
+                }
+            }
+        });
+
         updateUI();
+        requestAnimationFrame(gameLoop);
     }
 
     loadGame();
     renderGenerators();
+    renderUpgrades();
     renderManagers();
     updateUI();
+
+    requestAnimationFrame(gameLoop);
     setInterval(saveGame, 5000); 
 </script>
 </body>
