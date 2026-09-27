@@ -55,33 +55,51 @@
         .header {
             text-align: center;
             background: var(--surface);
-            padding: 10px 15px;
+            padding: 8px 12px 6px 12px;
             border-bottom: 2px solid #333;
             box-shadow: 0 4px 10px rgba(0,0,0,0.6);
             position: relative;
             flex-shrink: 0;
         }
-        h1 { margin: 0 0 2px 0; color: var(--primary); font-size: 1.3em; letter-spacing: 0.5px; }
-        #currency-count { font-size: 1.85em; font-weight: bold; color: #fff; }
-        #eps { color: var(--text-muted); font-size: 0.85em; margin-top: 2px; }
+        h1 { margin: 0 0 2px 0; color: var(--primary); font-size: 1.25em; letter-spacing: 0.5px; }
+        #currency-count { font-size: 1.7em; font-weight: bold; color: #fff; }
+        #eps { color: var(--text-muted); font-size: 0.8em; margin-top: 1px; }
 
         .header-controls {
             position: absolute;
-            top: 10px;
-            right: 12px;
+            top: 8px;
+            right: 10px;
             display: flex;
-            gap: 8px;
+            gap: 6px;
             align-items: center;
         }
         .icon-ctrl-btn {
             background: #333;
             border: 1px solid #555;
             color: white;
-            padding: 6px 10px;
+            padding: 5px 8px;
             border-radius: 50%;
             cursor: pointer;
-            font-size: 0.95em;
+            font-size: 0.9em;
         }
+
+        /* Rank Ribbon (Option A) */
+        .rank-ribbon {
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid #3a3a3a;
+            border-radius: 8px;
+            padding: 5px 10px;
+            margin-top: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            font-size: 0.8em;
+            color: var(--text);
+        }
+        .rank-ribbon:hover { background: rgba(255, 255, 255, 0.05); }
+        .rank-badge { font-weight: bold; color: var(--primary); }
+        .rank-progress { color: var(--text-muted); }
 
         /* Boost Banner */
         .boost-bar {
@@ -90,7 +108,7 @@
             align-items: center;
             background: #1c1808;
             border-bottom: 1px solid #4a3d0f;
-            padding: 5px 10px;
+            padding: 4px 10px;
             flex-shrink: 0;
         }
         .boost-btn {
@@ -98,8 +116,8 @@
             border: 1px solid var(--primary);
             color: var(--primary);
             font-weight: bold;
-            font-size: 0.85em;
-            padding: 6px 14px;
+            font-size: 0.8em;
+            padding: 5px 12px;
             border-radius: 16px;
             cursor: pointer;
             display: flex;
@@ -122,18 +140,18 @@
             justify-content: space-between;
             align-items: center;
             background: #1a1a1a;
-            padding: 10px 15px;
+            padding: 8px 12px;
             border-bottom: 1px solid #333;
             flex-shrink: 0;
-            gap: 12px;
+            gap: 10px;
         }
         .manual-gather-btn {
             background-color: var(--primary);
             color: #000;
             border: none;
-            padding: 14px 22px;
-            font-size: 1.1em;
-            border-radius: 28px;
+            padding: 12px 18px;
+            font-size: 1.05em;
+            border-radius: 24px;
             cursor: pointer;
             font-weight: bold;
             touch-action: manipulation;
@@ -147,13 +165,13 @@
             background: #2a2a2a;
             color: var(--primary);
             border: 1.5px solid var(--primary);
-            padding: 12px 16px;
+            padding: 10px 14px;
             border-radius: 12px;
-            font-size: 0.9em;
+            font-size: 0.85em;
             font-weight: bold;
             cursor: pointer;
             white-space: nowrap;
-            min-width: 95px;
+            min-width: 90px;
             text-align: center;
         }
 
@@ -166,7 +184,7 @@
         }
         .tab-btn {
             flex: 1;
-            padding: 12px 0;
+            padding: 10px 0;
             background: none;
             border: none;
             color: var(--text-muted);
@@ -214,6 +232,11 @@
             flex-direction: column;
             gap: 8px;
         }
+        .gen-card.locked-silhouette {
+            opacity: 0.45;
+            filter: grayscale(80%);
+            border-style: dashed;
+        }
         .gen-header {
             display: flex;
             justify-content: space-between;
@@ -231,7 +254,7 @@
         .gen-progress-box {
             flex: 1;
             background: var(--progress-bg);
-            height: 42px;
+            height: 40px;
             border-radius: 8px;
             position: relative;
             overflow: hidden;
@@ -250,7 +273,6 @@
             background: linear-gradient(90deg, #1f618d, #3498db);
         }
 
-        /* Fast-Speed Barber-Pole Stream Animation */
         .gen-progress-fill.fast-stream {
             width: 100% !important;
             background: repeating-linear-gradient(
@@ -311,6 +333,30 @@
         .buy-btn:hover:not(:disabled) { filter: brightness(1.15); }
         .buy-btn-qty { font-size: 0.75em; color: var(--text-muted); font-weight: normal; margin-top: 2px; }
 
+        .bulk-upg-bar {
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: flex-end;
+        }
+        .bulk-upg-btn {
+            background: #1b382b;
+            border: 1px solid var(--upgrade);
+            color: #a3e9c0;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 0.85em;
+            cursor: pointer;
+            width: 100%;
+            text-align: center;
+        }
+        .bulk-upg-btn:disabled {
+            background: #222;
+            border-color: #444;
+            color: #666;
+            cursor: not-allowed;
+        }
+
         .list-item {
             background-color: var(--surface);
             margin-bottom: 10px;
@@ -358,29 +404,30 @@
             align-items: center !important;
         }
 
-        /* Floating Action Buttons */
+        /* Pinned Translucent Floating Buttons */
         .fab-container {
             position: fixed;
-            bottom: 25px;
-            right: 20px;
+            bottom: 20px;
+            right: 16px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
             z-index: 100;
         }
         .fab {
-            width: 52px;
-            height: 52px;
+            width: 46px;
+            height: 46px;
             border-radius: 50%;
-            background: var(--surface);
-            border: 2px solid var(--primary);
+            background: rgba(34, 34, 34, 0.85);
+            backdrop-filter: blur(4px);
+            border: 1.5px solid var(--primary);
             color: #fff;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.35em;
+            font-size: 1.25em;
             cursor: pointer;
-            box-shadow: 0 6px 14px rgba(0,0,0,0.6);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
             touch-action: manipulation;
         }
         .fab:active { transform: scale(0.92); }
@@ -402,7 +449,7 @@
             border-radius: 12px;
             border: 2px solid var(--primary);
             width: 100%;
-            max-width: 380px;
+            max-width: 400px;
             max-height: 80vh;
             overflow-y: auto;
         }
@@ -426,6 +473,40 @@
             margin-top: 15px;
             font-weight: bold;
             cursor: pointer;
+        }
+
+        /* Quest Card Styling */
+        .quest-card {
+            background: #1c1c1c;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .quest-card.completed {
+            border-color: #2ecc71;
+            background: #12251a;
+        }
+        .quest-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+        .quest-bar-bg {
+            background: #333;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            width: 100%;
+        }
+        .quest-bar-fill {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
         }
 
         .confetti-particle {
@@ -453,6 +534,12 @@
         <h1 id="world-title">Backyard Flock</h1>
         <div id="currency-count">0 Eggs</div>
         <div id="eps">Est: 0 eggs / sec</div>
+
+        <!-- Pinned Rank Ribbon (Option A) -->
+        <div class="rank-ribbon" onclick="openRankModal()">
+            <span class="rank-badge" id="rank-ribbon-badge">Rank 1 / 50</span>
+            <span class="rank-progress" id="rank-ribbon-progress">Quests: 0/3 Completed ▾</span>
+        </div>
     </div>
 
     <!-- 2x Production Boost Bar -->
@@ -494,6 +581,11 @@
 
     <!-- TAB 2: UPGRADES -->
     <div id="tab-upgrades" class="tab-content">
+        <div class="bulk-upg-bar">
+            <button class="bulk-upg-btn" id="btn-buy-all-upgs" onclick="buyAllAffordableUpgrades(event)" disabled>
+                Buy All Available (0)
+            </button>
+        </div>
         <div id="upgrades-container"></div>
     </div>
 
@@ -525,7 +617,6 @@
             <span id="lifetime-display" style="font-size:1.2em; color:#fff; font-weight:bold;">0</span>
         </div>
 
-        <!-- Master Hard Reset -->
         <div class="list-item prestige-box danger-box">
             <div class="info">
                 <h3 style="color: var(--danger);">Hard Reset (New Game)</h3>
@@ -542,6 +633,16 @@
 <div class="fab-container">
     <div class="fab" id="world-swap-fab" onclick="toggleWorld()" title="Switch World">🐴</div>
     <div class="fab" onclick="openStatsModal()" title="Statistics">📊</div>
+</div>
+
+<!-- Rank Modal -->
+<div class="modal-overlay" id="rank-modal">
+    <div class="modal-box">
+        <h2 style="color: var(--primary); margin-top:0; font-size:1.3em;" id="rank-modal-title">Rank Missions</h2>
+        <div class="stats" style="margin-bottom:12px;" id="rank-modal-sub">Level Progress: +0% Global Production Bonus</div>
+        <div id="quest-list"></div>
+        <button class="modal-close-btn" onclick="closeRankModal()">Close</button>
+    </div>
 </div>
 
 <!-- Statistics Modal -->
@@ -565,7 +666,6 @@
 </div>
 
 <script>
-    // --- Audio System ---
     let audioCtx = null;
     let musicPlaying = false;
 
@@ -645,7 +745,6 @@
         }
     }
 
-    // --- Number Formatting ---
     const WORD_POWERS = [
         { val: 1e33, word: "Decillion" },
         { val: 1e30, word: "Nonillion" },
@@ -660,6 +759,7 @@
     ];
 
     function formatFullWords(num) {
+        if (isNaN(num) || num <= 0) return "0";
         if (num < 1000000) {
             return Math.floor(num).toLocaleString('en-US');
         }
@@ -673,7 +773,7 @@
     }
 
     function formatTime(seconds) {
-        if (seconds < 0.20) return `Instant`;
+        if (seconds <= 0.20) return `Instant`;
         if (seconds < 1) return `${(seconds).toFixed(2)}s`;
         if (seconds < 60) return `${(seconds).toFixed(1)}s`;
         const mins = Math.floor(seconds / 60);
@@ -681,13 +781,11 @@
         return `${mins}m ${secs}s`;
     }
 
-    // --- Dual World Definitions ---
     const COST_MULTIPLIER = 1.15;
     const BUY_MODES = [1, 5, 10, 100, 'next', 'max'];
     let buyModeIndex = 0;
 
-    // Generator factory with 10 deep upgrade tiers
-    function createUpgradesForWorld(genDefs, currencyUnit) {
+    function createUpgradesForWorld(genDefs) {
         let upgs = [];
         const discountTiers = [
             { pct: 0.10, multCost: 25 },
@@ -708,7 +806,7 @@
             discountTiers.forEach((d, dIdx) => {
                 upgs.push({
                     id: `u_${g.id}_d_${dIdx}`,
-                    name: `${g.name} Efficiency Tier ${dIdx + 1}`,
+                    name: `${g.name} Discount ${dIdx + 1}`,
                     targetGen: gIdx,
                     type: 'discount',
                     value: d.pct,
@@ -720,7 +818,7 @@
             multTiers.forEach((m, mIdx) => {
                 upgs.push({
                     id: `u_${g.id}_m_${mIdx}`,
-                    name: `${g.name} Mastery Tier ${mIdx + 1}`,
+                    name: `${g.name} Multiplier ${mIdx + 1}`,
                     targetGen: gIdx,
                     type: 'mult',
                     value: m.factor,
@@ -733,7 +831,6 @@
         return upgs;
     }
 
-    // World 1: Flock
     const flockGenerators = [
         { id: 'chick', name: 'Chick', baseCost: 10, baseProd: 1, baseTime: 0.6, owned: 0, progress: 0, isRunning: false, automated: false },
         { id: 'coop', name: 'Backyard Coop', baseCost: 100, baseProd: 12, baseTime: 3.0, owned: 0, progress: 0, isRunning: false, automated: false },
@@ -757,7 +854,6 @@
         { id: 'fm11', name: 'Clarabelle', cost: 100000000000000, desc: 'Global Egg production x10', bought: false, targetGen: -1 }
     ];
 
-    // World 2: Equine Estate
     const equineGenerators = [
         { id: 'foal', name: 'Miniature Foal', baseCost: 10, baseProd: 1, baseTime: 0.6, owned: 0, progress: 0, isRunning: false, automated: false },
         { id: 'stall', name: 'Paddock Stall', baseCost: 100, baseProd: 12, baseTime: 3.0, owned: 0, progress: 0, isRunning: false, automated: false },
@@ -781,10 +877,58 @@
         { id: 'em11', name: 'Four Socks Shakur', cost: 100000000000000, desc: 'Global Horseshoe production x10', bought: false, targetGen: -1 }
     ];
 
+    // --- 50-Level Quest Generator ---
+    function getQuestsForLevel(level, wKey) {
+        const isFlock = (wKey === 'flock');
+        const unit = isFlock ? 'Eggs' : 'Horseshoes';
+        const gName0 = isFlock ? 'Chicks' : 'Foals';
+        const gName1 = isFlock ? 'Coops' : 'Stalls';
+        const gName2 = isFlock ? 'Enclosures' : 'Arenas';
+
+        const targetQty0 = 10 + (level * 8);
+        const targetQty1 = Math.max(0, (level - 2) * 6);
+        const targetBank = 50 * Math.pow(1.65, level);
+
+        let qList = [
+            {
+                id: `q_${level}_0`,
+                text: `Own ${targetQty0} ${gName0}`,
+                check: (w) => w.generators[0].owned >= targetQty0,
+                progress: (w) => Math.min(1, w.generators[0].owned / targetQty0)
+            },
+            {
+                id: `q_${level}_1`,
+                text: `Accumulate ${formatFullWords(targetBank)} current ${unit}`,
+                check: (w) => w.currency >= targetBank,
+                progress: (w) => Math.min(1, w.currency / targetBank)
+            }
+        ];
+
+        if (level % 2 === 0) {
+            const mgrTarget = Math.min(11, Math.max(1, Math.floor(level / 4)));
+            qList.push({
+                id: `q_${level}_2`,
+                text: `Hire at least ${mgrTarget} Managers`,
+                check: (w) => w.managers.filter(m => m.bought).length >= mgrTarget,
+                progress: (w) => Math.min(1, w.managers.filter(m => m.bought).length / mgrTarget)
+            });
+        } else {
+            const targetQtyAny = Math.max(5, (level - 1) * 5);
+            qList.push({
+                id: `q_${level}_2`,
+                text: `Own ${targetQtyAny} ${gName1}`,
+                check: (w) => w.generators[1].owned >= targetQtyAny,
+                progress: (w) => Math.min(1, w.generators[1].owned / targetQtyAny)
+            });
+        }
+        return qList;
+    }
+
     let gameState = {
-        activeWorld: 'flock', // 'flock' or 'equine'
+        activeWorld: 'flock',
         worlds: {
             flock: {
+                level: 1,
                 currency: 0,
                 lifetimeCurrency: 0,
                 prestigeCurrency: 0,
@@ -792,10 +936,11 @@
                 boostCooldownUntil: 0,
                 generators: flockGenerators,
                 managers: flockManagers,
-                upgrades: createUpgradesForWorld(flockGenerators, 'Eggs'),
+                upgrades: createUpgradesForWorld(flockGenerators),
                 lastSaveTime: Date.now()
             },
             equine: {
+                level: 1,
                 currency: 0,
                 lifetimeCurrency: 0,
                 prestigeCurrency: 0,
@@ -803,7 +948,7 @@
                 boostCooldownUntil: 0,
                 generators: equineGenerators,
                 managers: equineManagers,
-                upgrades: createUpgradesForWorld(equineGenerators, 'Horseshoes'),
+                upgrades: createUpgradesForWorld(equineGenerators),
                 lastSaveTime: Date.now()
             }
         }
@@ -813,29 +958,31 @@
         return gameState.worlds[gameState.activeWorld];
     }
 
-    // --- Calculation Engine ---
-    function isBoostActive() {
-        return Date.now() < curW().boostActiveUntil;
+    function isBoostActive(wKey) {
+        return Date.now() < gameState.worlds[wKey].boostActiveUntil;
     }
 
-    function getPrestigeMultiplier() { 
-        return 1 + (curW().prestigeCurrency * 0.10); 
+    function getPrestigeMultiplier(wKey) { 
+        return 1 + (gameState.worlds[wKey].prestigeCurrency * 0.10); 
     }
 
-    function getGlobalMultiplier() {
+    function getRankMultiplier(wKey) {
+        return 1 + ((gameState.worlds[wKey].level - 1) * 0.05); // +5% per Level
+    }
+
+    function getGlobalMultiplier(wKey) {
         let mult = 1;
-        const w = curW();
-        // Check global managers (index 6, 9, 10)
+        const w = gameState.worlds[wKey];
         if (w.managers[6] && w.managers[6].bought) mult *= 1.5;
         if (w.managers[9] && w.managers[9].bought) mult *= 3.0;
         if (w.managers[10] && w.managers[10].bought) mult *= 10.0;
-        if (isBoostActive()) mult *= 2.0;
-        return mult * getPrestigeMultiplier();
+        if (isBoostActive(wKey)) mult *= 2.0;
+        return mult * getPrestigeMultiplier(wKey) * getRankMultiplier(wKey);
     }
 
-    function getGenDiscount(genIndex) {
+    function getGenDiscount(wKey, genIndex) {
         let discount = 0;
-        curW().upgrades.forEach(u => {
+        gameState.worlds[wKey].upgrades.forEach(u => {
             if (u.targetGen === genIndex && u.type === 'discount' && u.bought) {
                 discount = Math.max(discount, u.value);
             }
@@ -843,9 +990,9 @@
         return 1 - discount;
     }
 
-    function getGenMultiplier(genIndex) {
+    function getGenMultiplier(wKey, genIndex) {
         let mult = 1;
-        curW().upgrades.forEach(u => {
+        gameState.worlds[wKey].upgrades.forEach(u => {
             if (u.targetGen === genIndex && u.type === 'mult' && u.bought) {
                 mult *= u.value;
             }
@@ -872,23 +1019,23 @@
         return (Math.floor(owned / 100) + 1) * 100;
     }
 
-    function getCycleTime(gen) {
-        const mgr8 = curW().managers[7];
+    function getCycleTime(wKey, gen) {
+        const mgr8 = gameState.worlds[wKey].managers[7];
         const globalSpeed = (mgr8 && mgr8.bought) ? 1.25 : 1.0;
         const milestoneSpeed = getMilestoneSpeedMultiplier(gen.owned);
         return Math.max(0.05, gen.baseTime / (milestoneSpeed * globalSpeed));
     }
 
-    function getCyclePayout(gen, index) {
+    function getCyclePayout(wKey, gen, index) {
         if (gen.owned === 0) return 0;
-        const genMult = getGenMultiplier(index);
-        const globalMult = getGlobalMultiplier();
+        const genMult = getGenMultiplier(wKey, index);
+        const globalMult = getGlobalMultiplier(wKey);
         return gen.owned * gen.baseProd * genMult * globalMult;
     }
 
-    function getBatchCost(gen, genIndex, amount) {
+    function getBatchCost(wKey, gen, genIndex, amount) {
         if (amount <= 0) return 0;
-        const discountedBase = gen.baseCost * getGenDiscount(genIndex);
+        const discountedBase = gen.baseCost * getGenDiscount(wKey, genIndex);
         const currentCost = discountedBase * Math.pow(COST_MULTIPLIER, gen.owned);
         if (amount === 1) return currentCost;
         return currentCost * ((Math.pow(COST_MULTIPLIER, amount) - 1) / (COST_MULTIPLIER - 1));
@@ -896,17 +1043,18 @@
 
     function getResolvedBuyQty(gen, genIndex) {
         const mode = BUY_MODES[buyModeIndex];
+        const wKey = gameState.activeWorld;
         if (typeof mode === 'number') return mode;
         if (mode === 'next') {
             const nextMilestone = getNextMilestone(gen.owned);
             return Math.max(1, nextMilestone - gen.owned);
         }
         if (mode === 'max') {
-            const discountedBase = gen.baseCost * getGenDiscount(genIndex);
+            const discountedBase = gen.baseCost * getGenDiscount(wKey, genIndex);
             const currentCost = discountedBase * Math.pow(COST_MULTIPLIER, gen.owned);
             if (curW().currency < currentCost) return 1;
             let n = Math.floor(Math.log(1 + (curW().currency * (COST_MULTIPLIER - 1)) / currentCost) / Math.log(COST_MULTIPLIER));
-            while (n > 1 && getBatchCost(gen, genIndex, n) > curW().currency) {
+            while (n > 1 && getBatchCost(wKey, gen, genIndex, n) > curW().currency) {
                 n--;
             }
             return Math.max(1, n);
@@ -914,12 +1062,13 @@
         return 1;
     }
 
-    function getEstimatedEPS() {
+    function getEstimatedEPS(wKey) {
         let eps = 0;
-        curW().generators.forEach((gen, idx) => {
+        const w = gameState.worlds[wKey];
+        w.generators.forEach((gen, idx) => {
             if (gen.owned > 0 && gen.automated) {
-                const payout = getCyclePayout(gen, idx);
-                const time = getCycleTime(gen);
+                const payout = getCyclePayout(wKey, gen, idx);
+                const time = getCycleTime(wKey, gen);
                 eps += (payout / time);
             }
         });
@@ -929,12 +1078,14 @@
     // --- Actions ---
     function manualClick(e) {
         playClickSound();
+        const wKey = gameState.activeWorld;
         const m9 = curW().managers[8];
-        let clickVal = 1 * getGlobalMultiplier();
+        let clickVal = 1 * getGlobalMultiplier(wKey);
         if (m9 && m9.bought) clickVal *= 100;
         
         curW().currency += clickVal;
         curW().lifetimeCurrency += clickVal;
+        checkQuests();
         updateUI();
     }
 
@@ -948,15 +1099,19 @@
     }
 
     function buyGenerator(index, e) {
+        const wKey = gameState.activeWorld;
         const gen = curW().generators[index];
         const qty = getResolvedBuyQty(gen, index);
-        const cost = getBatchCost(gen, index, qty);
+        const cost = getBatchCost(wKey, gen, index, qty);
         if (curW().currency >= cost) {
             playChimeSound();
             if (e) triggerConfetti(e.clientX, e.clientY);
             curW().currency -= cost;
             gen.owned += qty;
+            checkQuests();
             renderGenerators();
+            renderUpgrades();
+            renderManagers();
             updateUI();
         }
     }
@@ -968,6 +1123,33 @@
             if (e) triggerConfetti(e.clientX, e.clientY);
             curW().currency -= upg.cost;
             upg.bought = true;
+            checkQuests();
+            renderUpgrades();
+            renderGenerators();
+            updateUI();
+        }
+    }
+
+    function buyAllAffordableUpgrades(e) {
+        const w = curW();
+        let boughtCount = 0;
+        // Sort lowest price first to maximize upgrades bought
+        let available = w.upgrades
+            .filter(u => !u.bought && w.generators[u.targetGen].owned > 0 && w.currency >= u.cost)
+            .sort((a, b) => a.cost - b.cost);
+
+        available.forEach(upg => {
+            if (w.currency >= upg.cost) {
+                w.currency -= upg.cost;
+                upg.bought = true;
+                boughtCount++;
+            }
+        });
+
+        if (boughtCount > 0) {
+            playChimeSound();
+            if (e) triggerConfetti(e.clientX, e.clientY);
+            checkQuests();
             renderUpgrades();
             renderGenerators();
             updateUI();
@@ -990,6 +1172,7 @@
                     target.progress = 0;
                 }
             }
+            checkQuests();
             renderManagers();
             renderGenerators();
             updateUI();
@@ -1011,15 +1194,18 @@
         const w = curW();
         if (now >= w.boostCooldownUntil) {
             playChimeSound();
-            w.boostActiveUntil = now + (2 * 60 * 1000); // 2 minutes active
-            w.boostCooldownUntil = now + (10 * 60 * 1000); // 10 minute cooldown cycle
+            w.boostActiveUntil = now + (2 * 60 * 1000);
+            w.boostCooldownUntil = now + (10 * 60 * 1000);
             updateUI();
         }
     }
 
     function toggleWorld() {
         playClickSound();
+        curW().lastSaveTime = Date.now();
         gameState.activeWorld = (gameState.activeWorld === 'flock') ? 'equine' : 'flock';
+        curW().lastSaveTime = Date.now();
+
         applyWorldTheme();
         renderGenerators();
         renderUpgrades();
@@ -1040,6 +1226,7 @@
             : 'Reset estate progress to attract Golden Saddles. Each Golden Saddle provides a permanent +10% boost.';
         document.getElementById('lifetime-label').innerText = isFlock ? 'Total Lifetime Eggs Produced:' : 'Total Lifetime Horseshoes Forged:';
         document.getElementById('stats-modal-title').innerText = isFlock ? 'Flock Revenue Breakdown' : 'Equine Revenue Breakdown';
+        document.getElementById('rank-modal-title').innerText = isFlock ? 'Flock Rank Quests' : 'Equine Rank Quests';
     }
 
     function switchTab(tabId) {
@@ -1054,6 +1241,63 @@
         if (tabId === 'managers') renderManagers();
     }
 
+    // --- Quests & Ranks Engine ---
+    function checkQuests() {
+        const wKey = gameState.activeWorld;
+        const w = curW();
+        if (w.level >= 50) return;
+
+        const quests = getQuestsForLevel(w.level, wKey);
+        const allCompleted = quests.every(q => q.check(w));
+
+        if (allCompleted) {
+            w.level = Math.min(50, w.level + 1);
+            playChimeSound();
+            triggerConfetti(window.innerWidth / 2, 80);
+            updateUI();
+        }
+    }
+
+    function openRankModal() {
+        playClickSound();
+        const wKey = gameState.activeWorld;
+        const w = curW();
+        const modal = document.getElementById('rank-modal');
+        const qContainer = document.getElementById('quest-list');
+        const sub = document.getElementById('rank-modal-sub');
+        
+        sub.innerText = `Current Level: ${w.level} / 50 (+${((w.level - 1) * 5)}% Production Bonus)`;
+        qContainer.innerHTML = '';
+
+        if (w.level >= 50) {
+            qContainer.innerHTML = `<div class="stats" style="text-align:center; padding: 25px; color: var(--primary);">👑 Maximum Rank 50 Reached! Empire fully mastered!</div>`;
+        } else {
+            const quests = getQuestsForLevel(w.level, wKey);
+            quests.forEach(q => {
+                const isDone = q.check(w);
+                const progressPct = (q.progress(w) * 100).toFixed(0);
+                qContainer.innerHTML += `
+                    <div class="quest-card ${isDone ? 'completed' : ''}">
+                        <div class="quest-header">
+                            <span>${q.text}</span>
+                            <span>${isDone ? '✅ Complete' : `${progressPct}%`}</span>
+                        </div>
+                        <div class="quest-bar-bg">
+                            <div class="quest-bar-fill" style="width: ${progressPct}%;"></div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        modal.style.display = 'flex';
+    }
+
+    function closeRankModal() {
+        playClickSound();
+        document.getElementById('rank-modal').style.display = 'none';
+    }
+
     // --- Prestige Engine ---
     function calculatePendingPrestige() {
         const totalEarnable = Math.floor(Math.sqrt(curW().lifetimeCurrency / 100));
@@ -1063,7 +1307,7 @@
     function prestige(e) {
         const pending = calculatePendingPrestige();
         const unit = (gameState.activeWorld === 'flock') ? 'Golden Eggs' : 'Golden Saddles';
-        if (pending > 0 && confirm(`Claim ${formatFullWords(pending)} ${unit} and reset this property?`)) {
+        if (pending > 0 && confirm(`Claim ${formatFullWords(pending)} ${unit} and reset this property? (Ranks and Level bonuses persist).`)) {
             playChimeSound();
             if (e) triggerConfetti(e.clientX, e.clientY);
             const w = curW();
@@ -1088,30 +1332,31 @@
 
     function hardReset() {
         playClickSound();
-        const c1 = confirm("WARNING: Are you sure you want to completely erase ALL progress across BOTH Backyard Flock and Equine Estate?");
+        const c1 = confirm("WARNING: Are you sure you want to completely erase ALL progress across BOTH Backyard Flock and Equine Estate, including Ranks?");
         if (c1) {
             const c2 = confirm("FINAL WARNING: This is completely irreversible and resets everything back to Day 1. Proceed?");
             if (c2) {
-                ['backyardFlockSave', 'backyardFlockSave6', 'backyardFlockSave7', 'empireTycoonSaveV3'].forEach(k => localStorage.removeItem(k));
+                ['backyardFlockSave', 'backyardFlockSave6', 'backyardFlockSave7', 'empireTycoonSaveV3', 'empireTycoonSaveV4'].forEach(k => localStorage.removeItem(k));
                 location.reload();
             }
         }
     }
 
-    // --- Statistics Modal Breakdown ---
+    // --- Statistics Modal ---
     function openStatsModal() {
         playClickSound();
+        const wKey = gameState.activeWorld;
         const modal = document.getElementById('stats-modal');
         const list = document.getElementById('stats-leaderboard');
-        const unit = (gameState.activeWorld === 'flock') ? 'eggs/sec' : 'horseshoes/sec';
-        const totalEPS = getEstimatedEPS();
+        const unit = (wKey === 'flock') ? 'eggs/sec' : 'horseshoes/sec';
+        const totalEPS = getEstimatedEPS(wKey);
         
         document.getElementById('stats-modal-eps').innerText = `Total Production: +${formatFullWords(totalEPS)} ${unit}`;
         list.innerHTML = '';
 
         let ranked = curW().generators.map((gen, idx) => {
-            const payout = getCyclePayout(gen, idx);
-            const time = getCycleTime(gen);
+            const payout = getCyclePayout(wKey, gen, idx);
+            const time = getCycleTime(wKey, gen);
             const eps = (gen.owned > 0 && gen.automated) ? (payout / time) : 0;
             return { name: gen.name, owned: gen.owned, eps: eps };
         });
@@ -1143,30 +1388,33 @@
         document.getElementById('stats-modal').style.display = 'none';
     }
 
-    // --- Save & Offline Gains ---
+    // --- Save & Offline Processing ---
     function saveGame() {
-        curW().lastSaveTime = Date.now();
-        localStorage.setItem('empireTycoonSaveV3', JSON.stringify(gameState));
+        const now = Date.now();
+        gameState.worlds.flock.lastSaveTime = now;
+        gameState.worlds.equine.lastSaveTime = now;
+        localStorage.setItem('empireTycoonSaveV4', JSON.stringify(gameState));
     }
 
     function loadGame() {
-        const saved = localStorage.getItem('empireTycoonSaveV3');
+        const saved = localStorage.getItem('empireTycoonSaveV4');
         if (saved) {
             try {
                 const data = JSON.parse(saved);
                 if (data.worlds && data.worlds.flock) {
                     gameState.activeWorld = data.activeWorld || 'flock';
-                    // Merge flock
                     ['flock', 'equine'].forEach(wKey => {
                         if (data.worlds[wKey]) {
                             const src = data.worlds[wKey];
                             const dst = gameState.worlds[wKey];
+                            dst.level = src.level || 1;
                             dst.currency = src.currency || 0;
                             dst.lifetimeCurrency = src.lifetimeCurrency || 0;
                             dst.prestigeCurrency = src.prestigeCurrency || 0;
                             dst.boostActiveUntil = src.boostActiveUntil || 0;
                             dst.boostCooldownUntil = src.boostCooldownUntil || 0;
                             dst.lastSaveTime = src.lastSaveTime || Date.now();
+
                             if (src.generators) {
                                 src.generators.forEach((sg, i) => {
                                     if (dst.generators[i]) {
@@ -1197,23 +1445,18 @@
                 console.error("Save load error", e);
             }
         } else {
-            // Attempt migration from v2 (Save 7)
-            const old = localStorage.getItem('backyardFlockSave7');
-            if (old) {
+            // Attempt migration from v3
+            const v3 = localStorage.getItem('empireTycoonSaveV3');
+            if (v3) {
                 try {
-                    const data = JSON.parse(old);
-                    const fw = gameState.worlds.flock;
-                    fw.currency = data.eggs || 0;
-                    fw.lifetimeCurrency = data.lifetimeEggs || 0;
-                    fw.prestigeCurrency = data.goldenEggs || 0;
-                    if (data.generators) {
-                        data.generators.forEach((g, i) => {
-                            if (fw.generators[i]) {
-                                fw.generators[i].owned = g.owned || 0;
-                                fw.generators[i].automated = g.automated || false;
-                            }
-                        });
-                    }
+                    const data = JSON.parse(v3);
+                    ['flock', 'equine'].forEach(k => {
+                        if (data.worlds[k]) {
+                            gameState.worlds[k].currency = data.worlds[k].currency || 0;
+                            gameState.worlds[k].lifetimeCurrency = data.worlds[k].lifetimeCurrency || 0;
+                            gameState.worlds[k].prestigeCurrency = data.worlds[k].prestigeCurrency || 0;
+                        }
+                    });
                 } catch(e) {}
             }
         }
@@ -1225,30 +1468,20 @@
         const now = Date.now();
         ['flock', 'equine'].forEach(wKey => {
             const w = gameState.worlds[wKey];
-            const diffSeconds = (now - w.lastSaveTime) / 1000;
+            const diffSeconds = Math.min(86400, Math.max(0, (now - w.lastSaveTime) / 1000));
+            w.lastSaveTime = now;
+
             if (diffSeconds > 30) {
-                let gains = 0;
-                w.generators.forEach((gen, idx) => {
-                    if (gen.owned > 0 && gen.automated) {
-                        // calculate standard payout
-                        let genMult = 1;
-                        w.upgrades.forEach(u => { if (u.targetGen === idx && u.type === 'mult' && u.bought) genMult *= u.value; });
-                        let gMult = (1 + (w.prestigeCurrency * 0.10));
-                        if (w.managers[6] && w.managers[6].bought) gMult *= 1.5;
-                        if (w.managers[9] && w.managers[9].bought) gMult *= 3.0;
-                        if (w.managers[10] && w.managers[10].bought) gMult *= 10.0;
-                        const payout = gen.owned * gen.baseProd * genMult * gMult;
-                        const speed = getMilestoneSpeedMultiplier(gen.owned) * ((w.managers[7] && w.managers[7].bought) ? 1.25 : 1.0);
-                        const time = Math.max(0.05, gen.baseTime / speed);
-                        gains += (payout / time) * diffSeconds;
-                    }
-                });
-                if (gains > 0 && wKey === gameState.activeWorld) {
+                const totalEPS = getEstimatedEPS(wKey);
+                const gains = totalEPS * diffSeconds;
+                if (gains > 0) {
                     w.currency += gains;
                     w.lifetimeCurrency += gains;
-                    const unit = (wKey === 'flock') ? 'Eggs' : 'Horseshoes';
-                    document.getElementById('offline-earned').innerText = `+${formatFullWords(gains)} ${unit}`;
-                    document.getElementById('offline-modal').style.display = 'flex';
+                    if (wKey === gameState.activeWorld) {
+                        const unit = (wKey === 'flock') ? 'Eggs' : 'Horseshoes';
+                        document.getElementById('offline-earned').innerText = `+${formatFullWords(gains)} ${unit}`;
+                        document.getElementById('offline-modal').style.display = 'flex';
+                    }
                 }
             }
         });
@@ -1266,14 +1499,32 @@
         if (!container.parentElement.classList.contains('active')) return;
         
         container.innerHTML = '';
-        const unit = (gameState.activeWorld === 'flock') ? 'Eggs' : 'Horseshoes';
+        const wKey = gameState.activeWorld;
+        const unit = (wKey === 'flock') ? 'Eggs' : 'Horseshoes';
 
         curW().generators.forEach((gen, index) => {
-            const cycleTime = getCycleTime(gen);
-            const payout = getCyclePayout(gen, index);
+            // Discovery Silhouette Logic: Must own previous generator
+            const isUnlocked = (index === 0) || (curW().generators[index - 1].owned > 0) || (gen.owned > 0);
+            
+            if (!isUnlocked) {
+                container.innerHTML += `
+                    <div class="gen-card locked-silhouette">
+                        <div class="gen-header">
+                            <div>
+                                <span class="gen-title">🔒 Undiscovered Facility</span>
+                            </div>
+                            <span class="gen-milestone">Requires prior facility</span>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            const cycleTime = getCycleTime(wKey, gen);
+            const payout = getCyclePayout(wKey, gen, index);
             const nextMilestone = getNextMilestone(gen.owned);
             const qty = getResolvedBuyQty(gen, index);
-            const cost = getBatchCost(gen, index, qty);
+            const cost = getBatchCost(wKey, gen, index, qty);
             const isFast = (cycleTime <= 0.20 && gen.automated);
 
             container.innerHTML += `
@@ -1307,25 +1558,37 @@
         if (!container.parentElement.classList.contains('active')) return;
         
         container.innerHTML = '';
-        let unbought = 0;
-        curW().upgrades.forEach((upg, index) => {
-            if (!upg.bought) {
-                unbought++;
-                container.innerHTML += `
-                    <div class="list-item upgrade">
-                        <div class="info">
-                            <h3>${upg.name}</h3>
-                            <div class="stats">${upg.desc}</div>
-                        </div>
-                        <button class="buy-btn upg-btn" id="btn-upg-${index}" onclick="buyUpgrade(${index}, event)">
-                            <span>${formatFullWords(upg.cost)}</span>
-                        </button>
-                    </div>
-                `;
-            }
+        const w = curW();
+
+        // Filter: Only show upgrades for generators owned > 0
+        let visibleUpgrades = w.upgrades.filter(upg => !upg.bought && w.generators[upg.targetGen].owned > 0);
+
+        // Smart Sort: Affordable unbought first, then unaffordable, sorted by price ascending
+        visibleUpgrades.sort((a, b) => {
+            const canAffordA = w.currency >= a.cost;
+            const canAffordB = w.currency >= b.cost;
+            if (canAffordA && !canAffordB) return -1;
+            if (!canAffordA && canAffordB) return 1;
+            return a.cost - b.cost;
         });
-        if (unbought === 0) {
-            container.innerHTML = '<div class="stats" style="text-align:center; padding: 25px;">All upgrades purchased!</div>';
+
+        visibleUpgrades.forEach((upg) => {
+            const originalIndex = w.upgrades.findIndex(u => u.id === upg.id);
+            container.innerHTML += `
+                <div class="list-item upgrade">
+                    <div class="info">
+                        <h3>${upg.name}</h3>
+                        <div class="stats">${upg.desc}</div>
+                    </div>
+                    <button class="buy-btn upg-btn" id="btn-upg-${originalIndex}" onclick="buyUpgrade(${originalIndex}, event)">
+                        <span>${formatFullWords(upg.cost)}</span>
+                    </button>
+                </div>
+            `;
+        });
+
+        if (visibleUpgrades.length === 0) {
+            container.innerHTML = '<div class="stats" style="text-align:center; padding: 25px;">No upgrades available. Unlock more facilities to reveal enhancements!</div>';
         }
     }
 
@@ -1334,38 +1597,52 @@
         if (!container.parentElement.classList.contains('active')) return;
         
         container.innerHTML = '';
-        let unbought = 0;
-        curW().managers.forEach((mgr, index) => {
-            if (!mgr.bought) {
-                unbought++;
-                container.innerHTML += `
-                    <div class="list-item manager">
-                        <div class="info">
-                            <h3>${mgr.name}</h3>
-                            <div class="stats">${mgr.desc}</div>
-                        </div>
-                        <button class="buy-btn mgr-btn" id="btn-mgr-${index}" onclick="buyManager(${index}, event)">
-                            <span>${formatFullWords(mgr.cost)}</span>
-                        </button>
-                    </div>
-                `;
-            }
+        const w = curW();
+
+        // Filter: Hide automation managers if parent generator isn't owned yet
+        let visibleManagers = w.managers.filter(mgr => {
+            if (mgr.bought) return false;
+            if (mgr.targetGen >= 0 && w.generators[mgr.targetGen].owned === 0) return false;
+            return true;
         });
-        if (unbought === 0) {
-            container.innerHTML = '<div class="stats" style="text-align:center; padding: 25px;">All managers hired!</div>';
+
+        visibleManagers.forEach((mgr) => {
+            const originalIndex = w.managers.findIndex(m => m.id === mgr.id);
+            container.innerHTML += `
+                <div class="list-item manager">
+                    <div class="info">
+                        <h3>${mgr.name}</h3>
+                        <div class="stats">${mgr.desc}</div>
+                    </div>
+                    <button class="buy-btn mgr-btn" id="btn-mgr-${originalIndex}" onclick="buyManager(${originalIndex}, event)">
+                        <span>${formatFullWords(mgr.cost)}</span>
+                    </button>
+                </div>
+            `;
+        });
+
+        if (visibleManagers.length === 0) {
+            container.innerHTML = '<div class="stats" style="text-align:center; padding: 25px;">All currently available managers hired!</div>';
         }
     }
 
     function updateUI() {
+        const wKey = gameState.activeWorld;
         const w = curW();
-        const isFlock = (gameState.activeWorld === 'flock');
+        const isFlock = (wKey === 'flock');
         const unit = isFlock ? 'Eggs' : 'Horseshoes';
         const prestigeUnit = isFlock ? 'Golden Eggs' : 'Golden Saddles';
 
         document.getElementById('currency-count').innerText = `${formatFullWords(w.currency)} ${unit}`;
-        document.getElementById('eps').innerText = `Est: +${formatFullWords(getEstimatedEPS())} ${unit.toLowerCase()}/sec`;
+        document.getElementById('eps').innerText = `Est: +${formatFullWords(getEstimatedEPS(wKey))} ${unit.toLowerCase()}/sec`;
         document.getElementById('lifetime-display').innerText = formatFullWords(w.lifetimeCurrency);
         
+        // Update Rank Ribbon
+        document.getElementById('rank-ribbon-badge').innerText = `Rank ${w.level} / 50`;
+        const quests = getQuestsForLevel(w.level, wKey);
+        const completedCount = quests.filter(q => q.check(w)).length;
+        document.getElementById('rank-ribbon-progress').innerText = `Quests: ${completedCount}/3 ▾`;
+
         const pending = calculatePendingPrestige();
         document.getElementById('prestige-preview').innerText = `Claimable: ${formatFullWords(pending)} ${prestigeUnit}`;
         document.getElementById('prestige-current-bonus').innerText = `${formatFullWords(w.prestigeCurrency)} ${prestigeUnit} (+${formatFullWords(w.prestigeCurrency * 10)}% Bonus)`;
@@ -1390,25 +1667,38 @@
             boostText.innerText = `⚡ 2x Boost (Ready!)`;
         }
 
-        // Affordable Tab Notification Badges (Green Dots)
+        // Green Tab Notification Badges
         let canAffordGen = false;
         w.generators.forEach((gen, idx) => {
-            const qty = getResolvedBuyQty(gen, idx);
-            if (w.currency >= getBatchCost(gen, idx, qty)) canAffordGen = true;
+            const isUnlocked = (idx === 0) || (w.generators[idx - 1].owned > 0) || (gen.owned > 0);
+            if (isUnlocked) {
+                const qty = getResolvedBuyQty(gen, idx);
+                if (w.currency >= getBatchCost(wKey, gen, idx, qty)) canAffordGen = true;
+            }
         });
-        const canAffordUpg = w.upgrades.some(u => !u.bought && w.currency >= u.cost);
-        const canAffordMgr = w.managers.some(m => !m.bought && w.currency >= m.cost);
+
+        // Visible Affordable Upgrades Calculation
+        const affordableUpgs = w.upgrades.filter(u => !u.bought && w.generators[u.targetGen].owned > 0 && w.currency >= u.cost);
+        const canAffordUpg = affordableUpgs.length > 0;
+        const canAffordMgr = w.managers.some(m => !m.bought && (m.targetGen < 0 || w.generators[m.targetGen].owned > 0) && w.currency >= m.cost);
 
         document.getElementById('badge-generators').style.display = canAffordGen ? 'block' : 'none';
         document.getElementById('badge-upgrades').style.display = canAffordUpg ? 'block' : 'none';
         document.getElementById('badge-managers').style.display = canAffordMgr ? 'block' : 'none';
 
-        // Button States
+        // Bulk Buy All Upgrades Button State
+        const bulkBtn = document.getElementById('btn-buy-all-upgs');
+        if (bulkBtn) {
+            bulkBtn.innerText = `Buy All Available (${affordableUpgs.length})`;
+            bulkBtn.disabled = !canAffordUpg;
+        }
+
+        // Generator Buttons
         w.generators.forEach((gen, index) => {
             const btn = document.getElementById(`btn-gen-${index}`);
             if (btn) {
                 const qty = getResolvedBuyQty(gen, index);
-                const cost = getBatchCost(gen, index, qty);
+                const cost = getBatchCost(wKey, gen, index, qty);
                 const costEl = document.getElementById(`btn-cost-${index}`);
                 const qtyEl = document.getElementById(`btn-qty-${index}`);
                 if (costEl) costEl.innerText = formatFullWords(cost);
@@ -1428,19 +1718,18 @@
         });
     }
 
-    // --- Main Game Loop ---
+    // --- Main Loop ---
     let lastTick = performance.now();
 
     function gameLoop(now) {
         const dt = (now - lastTick) / 1000;
         lastTick = now;
 
-        // Run generators for both active & background worlds smoothly
         ['flock', 'equine'].forEach(wKey => {
             const w = gameState.worlds[wKey];
             w.generators.forEach((gen, index) => {
                 if (gen.owned > 0) {
-                    const cycleTime = getCycleTime(gen);
+                    const cycleTime = getCycleTime(wKey, gen);
                     const isFast = (cycleTime <= 0.20 && gen.automated);
 
                     if (gen.automated && !gen.isRunning) {
@@ -1450,15 +1739,14 @@
 
                     if (gen.isRunning) {
                         if (isFast) {
-                            // Stream payouts per second smoothly
-                            const payoutPerSec = getCyclePayout(gen, index) / cycleTime;
+                            const payoutPerSec = getCyclePayout(wKey, gen, index) / cycleTime;
                             const framePayout = payoutPerSec * dt;
                             w.currency += framePayout;
                             w.lifetimeCurrency += framePayout;
                         } else {
                             gen.progress += (dt / cycleTime);
                             if (gen.progress >= 1) {
-                                const payout = getCyclePayout(gen, index);
+                                const payout = getCyclePayout(wKey, gen, index);
                                 w.currency += payout;
                                 w.lifetimeCurrency += payout;
 
@@ -1480,11 +1768,11 @@
             });
         });
 
+        checkQuests();
         updateUI();
         requestAnimationFrame(gameLoop);
     }
 
-    // Initialize
     loadGame();
     renderGenerators();
     renderUpgrades();
