@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <title>Empire Tycoon: Backyard Flock & Equine Estate</title>
@@ -408,7 +408,7 @@
         .fab-container {
             position: fixed;
             bottom: 20px;
-            right: 16px;
+            right: max(16px, calc((100vw - 520px) / 2 + 16px));
             display: flex;
             flex-direction: column;
             gap: 10px;
@@ -517,6 +517,20 @@
             z-index: 9999;
             transition: transform 0.8s cubic-bezier(0.1, 0.8, 0.3, 1), opacity 0.8s ease-out;
         }
+
+        .boost-btn:disabled {
+            cursor: default;
+            opacity: 0.92;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.001ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.001ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
     </style>
 </head>
 <body class="theme-flock">
@@ -528,7 +542,7 @@
 
     <div class="header">
         <div class="header-controls">
-            <!-- TEMPORARY DEBUG BUTTON -->
+            <!-- RESTORED: Debug Button -->
             <button class="icon-ctrl-btn" style="border-radius: 8px; font-size: 0.75em; padding: 4px 8px; background: #3b2a08; border-color: #f39c12; color: #f39c12; font-weight: bold;" onclick="debugAddCurrency()">+10k</button>
             <button class="icon-ctrl-btn" id="music-btn" onclick="toggleMusic()">🔇</button>
         </div>
@@ -661,1146 +675,1364 @@
 <div class="modal-overlay" id="offline-modal">
     <div class="modal-box" style="text-align:center;">
         <h2 style="color: var(--primary); margin-top:0;">Welcome Back!</h2>
-        <p id="offline-desc">While you were away, your facilities kept working.</p>
+        <p id="offline-desc">While you were away, your automated facilities kept working.</p>
         <p style="font-size: 1.35em; font-weight: bold; margin: 12px 0; color: #fff;" id="offline-earned">0 Eggs</p>
         <button class="modal-close-btn" onclick="closeOfflineModal()">Collect</button>
     </div>
 </div>
 
 <script>
-    let audioCtx = null;
-    let musicPlaying = false;
+'use strict';
 
-    function initAudio() {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
+const SAVE_KEY = 'empireTycoonSaveV5';
+const SAVE_VERSION = 5;
+const WORLD_KEYS = ['flock', 'equine'];
+const COST_MULTIPLIER = 1.15;
+const BUY_MODES = [1, 5, 10, 100, 'next', 'max'];
+const BOOST_DURATION_MS = 2 * 60 * 1000;
+const BOOST_COOLDOWN_MS = 10 * 60 * 1000;
+const OFFLINE_CAP_MS = 24 * 60 * 60 * 1000;
+const OFFLINE_MODAL_THRESHOLD_MS = 30 * 1000;
+const UI_REFRESH_MS = 150;
+const AUTOSAVE_MS = 5000;
+
+let buyModeIndex = 0;
+let audioCtx = null;
+let musicPlaying = false;
+let lastUiRefresh = 0;
+let backgroundedAt = null;
+
+const $ = (id) => document.getElementById(id);
+
+const WORLD_CONFIG = {
+    flock: {
+        title: 'Backyard Flock',
+        themeClass: 'theme-flock',
+        swapIcon: '🐴',
+        currency: 'Eggs',
+        currencyLower: 'eggs',
+        prestigeCurrency: 'Golden Eggs',
+        gatherLabel: '🥚 Gather Egg',
+        generatorTabLabel: 'Generators',
+        prestigeTitle: 'Claim Golden Eggs',
+        prestigeDescription: 'Reset flock progress to attract Golden Eggs. Each Golden Egg provides a permanent +10% boost.',
+        lifetimeLabel: 'Total Lifetime Eggs Produced:',
+        statsTitle: 'Flock Revenue Breakdown',
+        rankTitle: 'Flock Rank Quests',
+        generators: [
+            { id: 'chick', name: 'Chick', baseCost: 10, baseProd: 1, baseTime: 0.6 },
+            { id: 'coop', name: 'Backyard Coop', baseCost: 100, baseProd: 12, baseTime: 3.0 },
+            { id: 'enclosure', name: 'Walk-in Enclosure', baseCost: 1200, baseProd: 140, baseTime: 8.0 },
+            { id: 'paddock', name: 'Solar-Fenced Paddock', baseCost: 15000, baseProd: 1200, baseTime: 24.0 },
+            { id: 'barn', name: 'Free-Range Barn', baseCost: 200000, baseProd: 9500, baseTime: 96.0 },
+            { id: 'farm', name: 'Commercial Farm', baseCost: 2500000, baseProd: 75000, baseTime: 384.0 }
+        ],
+        managers: [
+            { id: 'fm1', name: 'Annie', cost: 1000, desc: 'Automates Chick production', targetGen: 0 },
+            { id: 'fm2', name: 'Lunae', cost: 25000, desc: 'Automates Backyard Coop', targetGen: 1 },
+            { id: 'fm3', name: 'Cleo', cost: 500000, desc: 'Automates Walk-in Enclosure', targetGen: 2 },
+            { id: 'fm4', name: 'Myel', cost: 10000000, desc: 'Automates Solar-Fenced Paddock', targetGen: 3 },
+            { id: 'fm5', name: 'CoCo', cost: 250000000, desc: 'Automates Free-Range Barn', targetGen: 4 },
+            { id: 'fm6', name: 'Rhiannon', cost: 5000000000, desc: 'Automates Commercial Farm', targetGen: 5 },
+            { id: 'fm7', name: 'Bertha', cost: 50000000000, desc: 'Global Egg production +50%', targetGen: -1 },
+            { id: 'fm8', name: 'Violet', cost: 250000000000, desc: 'All cycles run 25% faster', targetGen: -1 },
+            { id: 'fm9', name: 'Marianne', cost: 1000000000000, desc: 'Gather Egg button yields x100', targetGen: -1 },
+            { id: 'fm10', name: 'Cranberry', cost: 10000000000000, desc: 'Global Egg production +200%', targetGen: -1 },
+            { id: 'fm11', name: 'Clarabelle', cost: 100000000000000, desc: 'Global Egg production x10', targetGen: -1 }
+        ]
+    },
+    equine: {
+        title: 'Equine Estate',
+        themeClass: 'theme-equine',
+        swapIcon: '🐔',
+        currency: 'Horseshoes',
+        currencyLower: 'horseshoes',
+        prestigeCurrency: 'Golden Saddles',
+        gatherLabel: '🧲 Forge Horseshoe',
+        generatorTabLabel: 'Facilities',
+        prestigeTitle: 'Claim Golden Saddles',
+        prestigeDescription: 'Reset estate progress to attract Golden Saddles. Each Golden Saddle provides a permanent +10% boost.',
+        lifetimeLabel: 'Total Lifetime Horseshoes Forged:',
+        statsTitle: 'Equine Revenue Breakdown',
+        rankTitle: 'Equine Rank Quests',
+        generators: [
+            { id: 'foal', name: 'Miniature Foal', baseCost: 10, baseProd: 1, baseTime: 0.6 },
+            { id: 'stall', name: 'Paddock Stall', baseCost: 100, baseProd: 12, baseTime: 3.0 },
+            { id: 'arena', name: 'Training Arena', baseCost: 1200, baseProd: 140, baseTime: 8.0 },
+            { id: 'roundpen', name: 'Covered Round Pen', baseCost: 15000, baseProd: 1200, baseTime: 24.0 },
+            { id: 'stable', name: 'Equestrian Stable', baseCost: 200000, baseProd: 9500, baseTime: 96.0 },
+            { id: 'studfarm', name: 'Championship Stud Farm', baseCost: 2500000, baseProd: 75000, baseTime: 384.0 }
+        ],
+        managers: [
+            { id: 'em1', name: 'Dyna', cost: 1000, desc: 'Automates Miniature Foal', targetGen: 0 },
+            { id: 'em2', name: 'Thunder', cost: 25000, desc: 'Automates Paddock Stall', targetGen: 1 },
+            { id: 'em3', name: 'Dexter', cost: 500000, desc: 'Automates Training Arena', targetGen: 2 },
+            { id: 'em4', name: 'Zippy', cost: 10000000, desc: 'Automates Covered Round Pen', targetGen: 3 },
+            { id: 'em5', name: 'Blaze', cost: 250000000, desc: 'Automates Equestrian Stable', targetGen: 4 },
+            { id: 'em6', name: 'Stormy', cost: 5000000000, desc: 'Automates Championship Stud Farm', targetGen: 5 },
+            { id: 'em7', name: 'Copper', cost: 50000000000, desc: 'Global Horseshoe production +50%', targetGen: -1 },
+            { id: 'em8', name: 'Shadow', cost: 250000000000, desc: 'All cycles run 25% faster', targetGen: -1 },
+            { id: 'em9', name: 'Pegasus', cost: 1000000000000, desc: 'Forge Horseshoe button yields x100', targetGen: -1 },
+            { id: 'em10', name: 'Sterling', cost: 10000000000000, desc: 'Global Horseshoe production +200%', targetGen: -1 },
+            { id: 'em11', name: 'Four Socks Shakur', cost: 100000000000000, desc: 'Global Horseshoe production x10', targetGen: -1 }
+        ]
     }
+};
 
-    function playClickSound() {
-        initAudio();
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(520, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(280, audioCtx.currentTime + 0.08);
-        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.08);
-    }
+const WORD_POWERS = [
+    { val: 1e33, word: 'Decillion' },
+    { val: 1e30, word: 'Nonillion' },
+    { val: 1e27, word: 'Octillion' },
+    { val: 1e24, word: 'Septillion' },
+    { val: 1e21, word: 'Sextillion' },
+    { val: 1e18, word: 'Quintillion' },
+    { val: 1e15, word: 'Quadrillion' },
+    { val: 1e12, word: 'Trillion' },
+    { val: 1e9, word: 'Billion' },
+    { val: 1e6, word: 'Million' }
+];
 
-    function playChimeSound() {
-        initAudio();
-        const notes = [523.25, 659.25, 783.99, 1046.50];
-        notes.forEach((freq, idx) => {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            const start = audioCtx.currentTime + (idx * 0.07);
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(freq, start);
-            gain.gain.setValueAtTime(0.12, start);
-            gain.gain.exponentialRampToValueAtTime(0.001, start + 0.25);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start(start);
-            osc.stop(start + 0.25);
-        });
-    }
-
-    function toggleMusic() {
-        playClickSound();
-        const bgm = document.getElementById('bgm');
-        const btn = document.getElementById('music-btn');
-        if (musicPlaying) {
-            bgm.pause();
-            btn.innerText = "🔇";
-            musicPlaying = false;
-        } else {
-            bgm.play().catch(e => console.log("Audio play blocked."));
-            btn.innerText = "🔊";
-            musicPlaying = true;
-        }
-    }
-
-    function triggerConfetti(x, y) {
-        const colors = ['#f39c12', '#f1c40f', '#2ecc71', '#e74c3c', '#9b59b6', '#3498db'];
-        for (let i = 0; i < 22; i++) {
-            const p = document.createElement('div');
-            p.className = 'confetti-particle';
-            p.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-            p.style.left = `${x}px`;
-            p.style.top = `${y}px`;
-            document.body.appendChild(p);
-
-            const angle = Math.random() * Math.PI * 2;
-            const velocity = 40 + Math.random() * 80;
-            const destX = Math.cos(angle) * velocity;
-            const destY = Math.sin(angle) * velocity;
-
-            requestAnimationFrame(() => {
-                p.style.transform = `translate(${destX}px, ${destY}px) scale(0)`;
-                p.style.opacity = '0';
-            });
-            setTimeout(() => p.remove(), 850);
-        }
-    }
-
-    const WORD_POWERS = [
-        { val: 1e33, word: "Decillion" },
-        { val: 1e30, word: "Nonillion" },
-        { val: 1e27, word: "Octillion" },
-        { val: 1e24, word: "Septillion" },
-        { val: 1e21, word: "Sextillion" },
-        { val: 1e18, word: "Quintillion" },
-        { val: 1e15, word: "Quadrillion" },
-        { val: 1e12, word: "Trillion" },
-        { val: 1e9,  word: "Billion" },
-        { val: 1e6,  word: "Million" }
+function createUpgradeDefinitions(generatorDefs) {
+    const discountTiers = [
+        { pct: 0.10, multCost: 25 },
+        { pct: 0.25, multCost: 250 },
+        { pct: 0.50, multCost: 5000 },
+        { pct: 0.75, multCost: 100000 }
+    ];
+    const multiplierTiers = [
+        { factor: 2, multCost: 50 },
+        { factor: 5, multCost: 1000 },
+        { factor: 10, multCost: 25000 },
+        { factor: 20, multCost: 500000 },
+        { factor: 50, multCost: 15000000 },
+        { factor: 100, multCost: 500000000 }
     ];
 
-    function formatFullWords(num) {
-        if (isNaN(num) || num <= 0) return "0";
-        if (num < 1000000) {
-            return Math.floor(num).toLocaleString('en-US');
-        }
-        for (let i = 0; i < WORD_POWERS.length; i++) {
-            if (num >= WORD_POWERS[i].val) {
-                const scaled = num / WORD_POWERS[i].val;
-                return `${scaled.toFixed(3)} ${WORD_POWERS[i].word}`;
-            }
-        }
-        return num.toExponential(3);
-    }
-
-    function formatTime(seconds) {
-        if (seconds <= 0.20) return `Instant`;
-        if (seconds < 1) return `${(seconds).toFixed(2)}s`;
-        if (seconds < 60) return `${(seconds).toFixed(1)}s`;
-        const mins = Math.floor(seconds / 60);
-        const secs = Math.floor(seconds % 60);
-        return `${mins}m ${secs}s`;
-    }
-
-    const COST_MULTIPLIER = 1.15;
-    const BUY_MODES = [1, 5, 10, 100, 'next', 'max'];
-    let buyModeIndex = 0;
-
-    function createUpgradesForWorld(genDefs) {
-        let upgs = [];
-        const discountTiers = [
-            { pct: 0.10, multCost: 25 },
-            { pct: 0.25, multCost: 250 },
-            { pct: 0.50, multCost: 5000 },
-            { pct: 0.75, multCost: 100000 }
-        ];
-        const multTiers = [
-            { factor: 2, multCost: 50 },
-            { factor: 5, multCost: 1000 },
-            { factor: 10, multCost: 25000 },
-            { factor: 20, multCost: 500000 },
-            { factor: 50, multCost: 15000000 },
-            { factor: 100, multCost: 500000000 }
-        ];
-
-        genDefs.forEach((g, gIdx) => {
-            discountTiers.forEach((d, dIdx) => {
-                upgs.push({
-                    id: `u_${g.id}_d_${dIdx}`,
-                    name: `${g.name} Discount ${dIdx + 1}`,
-                    targetGen: gIdx,
-                    type: 'discount',
-                    value: d.pct,
-                    cost: g.baseCost * d.multCost,
-                    desc: `${g.name} costs ${(d.pct * 100).toFixed(0)}% less`,
-                    bought: false
-                });
-            });
-            multTiers.forEach((m, mIdx) => {
-                upgs.push({
-                    id: `u_${g.id}_m_${mIdx}`,
-                    name: `${g.name} Multiplier ${mIdx + 1}`,
-                    targetGen: gIdx,
-                    type: 'mult',
-                    value: m.factor,
-                    cost: g.baseCost * m.multCost,
-                    desc: `${g.name} production x${m.factor}`,
-                    bought: false
-                });
+    const upgrades = [];
+    generatorDefs.forEach((gen, genIndex) => {
+        discountTiers.forEach((tier, tierIndex) => {
+            upgrades.push({
+                id: `u_${gen.id}_d_${tierIndex}`,
+                name: `${gen.name} Discount ${tierIndex + 1}`,
+                targetGen: genIndex,
+                type: 'discount',
+                value: tier.pct,
+                cost: gen.baseCost * tier.multCost,
+                desc: `${gen.name} costs ${(tier.pct * 100).toFixed(0)}% less`,
+                bought: false
             });
         });
-        return upgs;
-    }
-
-    const flockGenerators = [
-        { id: 'chick', name: 'Chick', baseCost: 10, baseProd: 1, baseTime: 0.6, owned: 0, progress: 0, isRunning: false, automated: false },
-        { id: 'coop', name: 'Backyard Coop', baseCost: 100, baseProd: 12, baseTime: 3.0, owned: 0, progress: 0, isRunning: false, automated: false },
-        { id: 'enclosure', name: 'Walk-in Enclosure', baseCost: 1200, baseProd: 140, baseTime: 8.0, owned: 0, progress: 0, isRunning: false, automated: false },
-        { id: 'paddock', name: 'Solar-Fenced Paddock', baseCost: 15000, baseProd: 1200, baseTime: 24.0, owned: 0, progress: 0, isRunning: false, automated: false },
-        { id: 'barn', name: 'Free-Range Barn', baseCost: 200000, baseProd: 9500, baseTime: 96.0, owned: 0, progress: 0, isRunning: false, automated: false },
-        { id: 'farm', name: 'Commercial Farm', baseCost: 2500000, baseProd: 75000, baseTime: 384.0, owned: 0, progress: 0, isRunning: false, automated: false }
-    ];
-
-    const flockManagers = [
-        { id: 'fm1', name: 'Annie', cost: 1000, desc: 'Automates Chick production', bought: false, targetGen: 0 },
-        { id: 'fm2', name: 'Lunae', cost: 25000, desc: 'Automates Backyard Coop', bought: false, targetGen: 1 },
-        { id: 'fm3', name: 'Cleo', cost: 500000, desc: 'Automates Walk-in Enclosure', bought: false, targetGen: 2 },
-        { id: 'fm4', name: 'Myel', cost: 10000000, desc: 'Automates Solar-Fenced Paddock', bought: false, targetGen: 3 },
-        { id: 'fm5', name: 'CoCo', cost: 250000000, desc: 'Automates Free-Range Barn', bought: false, targetGen: 4 },
-        { id: 'fm6', name: 'Rhiannon', cost: 5000000000, desc: 'Automates Commercial Farm', bought: false, targetGen: 5 },
-        { id: 'fm7', name: 'Bertha', cost: 50000000000, desc: 'Global Egg production +50%', bought: false, targetGen: -1 },
-        { id: 'fm8', name: 'Violet', cost: 250000000000, desc: 'All cycles run 25% faster', bought: false, targetGen: -1 },
-        { id: 'fm9', name: 'Marianne', cost: 1000000000000, desc: 'Gather Egg button yields x100', bought: false, targetGen: -1 },
-        { id: 'fm10', name: 'Cranberry', cost: 10000000000000, desc: 'Global Egg production +200%', bought: false, targetGen: -1 },
-        { id: 'fm11', name: 'Clarabelle', cost: 100000000000000, desc: 'Global Egg production x10', bought: false, targetGen: -1 }
-    ];
-
-    const equineGenerators = [
-        { id: 'foal', name: 'Miniature Foal', baseCost: 10, baseProd: 1, baseTime: 0.6, owned: 0, progress: 0, isRunning: false, automated: false },
-        { id: 'stall', name: 'Paddock Stall', baseCost: 100, baseProd: 12, baseTime: 3.0, owned: 0, progress: 0, isRunning: false, automated: false },
-        { id: 'arena', name: 'Training Arena', baseCost: 1200, baseProd: 140, baseTime: 8.0, owned: 0, progress: 0, isRunning: false, automated: false },
-        { id: 'roundpen', name: 'Covered Round Pen', baseCost: 15000, baseProd: 1200, baseTime: 24.0, owned: 0, progress: 0, isRunning: false, automated: false },
-        { id: 'stable', name: 'Equestrian Stable', baseCost: 200000, baseProd: 9500, baseTime: 96.0, owned: 0, progress: 0, isRunning: false, automated: false },
-        { id: 'studfarm', name: 'Championship Stud Farm', baseCost: 2500000, baseProd: 75000, baseTime: 384.0, owned: 0, progress: 0, isRunning: false, automated: false }
-    ];
-
-    const equineManagers = [
-        { id: 'em1', name: 'Dyna', cost: 1000, desc: 'Automates Miniature Foal', bought: false, targetGen: 0 },
-        { id: 'em2', name: 'Thunder', cost: 25000, desc: 'Automates Paddock Stall', bought: false, targetGen: 1 },
-        { id: 'em3', name: 'Dexter', cost: 500000, desc: 'Automates Training Arena', bought: false, targetGen: 2 },
-        { id: 'em4', name: 'Zippy', cost: 10000000, desc: 'Automates Covered Round Pen', bought: false, targetGen: 3 },
-        { id: 'em5', name: 'Blaze', cost: 250000000, desc: 'Automates Equestrian Stable', bought: false, targetGen: 4 },
-        { id: 'em6', name: 'Stormy', cost: 5000000000, desc: 'Automates Championship Stud Farm', bought: false, targetGen: 5 },
-        { id: 'em7', name: 'Copper', cost: 50000000000, desc: 'Global Horseshoe production +50%', bought: false, targetGen: -1 },
-        { id: 'em8', name: 'Shadow', cost: 250000000000, desc: 'All cycles run 25% faster', bought: false, targetGen: -1 },
-        { id: 'em9', name: 'Pegasus', cost: 1000000000000, desc: 'Forge Horseshoe button yields x100', bought: false, targetGen: -1 },
-        { id: 'em10', name: 'Sterling', cost: 10000000000000, desc: 'Global Horseshoe production +200%', bought: false, targetGen: -1 },
-        { id: 'em11', name: 'Four Socks Shakur', cost: 100000000000000, desc: 'Global Horseshoe production x10', bought: false, targetGen: -1 }
-    ];
-
-    // --- 50-Level Quest Generator ---
-    function getQuestsForLevel(level, wKey) {
-        const isFlock = (wKey === 'flock');
-        const unit = isFlock ? 'Eggs' : 'Horseshoes';
-        const gName0 = isFlock ? 'Chicks' : 'Foals';
-        const gName1 = isFlock ? 'Coops' : 'Stalls';
-
-        const targetQty0 = 10 + (level * 8);
-        const targetBank = 50 * Math.pow(1.65, level);
-
-        let qList = [
-            {
-                id: `q_${level}_0`,
-                text: `Own ${targetQty0} ${gName0}`,
-                check: (w) => w.generators[0].owned >= targetQty0,
-                progress: (w) => Math.min(1, w.generators[0].owned / targetQty0)
-            },
-            {
-                id: `q_${level}_1`,
-                text: `Accumulate ${formatFullWords(targetBank)} current ${unit}`,
-                check: (w) => w.currency >= targetBank,
-                progress: (w) => Math.min(1, w.currency / targetBank)
-            }
-        ];
-
-        if (level % 2 === 0) {
-            const mgrTarget = Math.min(11, Math.max(1, Math.floor(level / 4)));
-            qList.push({
-                id: `q_${level}_2`,
-                text: `Hire at least ${mgrTarget} Managers`,
-                check: (w) => w.managers.filter(m => m.bought).length >= mgrTarget,
-                progress: (w) => Math.min(1, w.managers.filter(m => m.bought).length / mgrTarget)
+        multiplierTiers.forEach((tier, tierIndex) => {
+            upgrades.push({
+                id: `u_${gen.id}_m_${tierIndex}`,
+                name: `${gen.name} Multiplier ${tierIndex + 1}`,
+                targetGen: genIndex,
+                type: 'mult',
+                value: tier.factor,
+                cost: gen.baseCost * tier.multCost,
+                desc: `${gen.name} production x${tier.factor}`,
+                bought: false
             });
-        } else {
-            const targetQtyAny = Math.max(5, (level - 1) * 5);
-            qList.push({
-                id: `q_${level}_2`,
-                text: `Own ${targetQtyAny} ${gName1}`,
-                check: (w) => w.generators[1].owned >= targetQtyAny,
-                progress: (w) => Math.min(1, w.generators[1].owned / targetQtyAny)
-            });
-        }
-        return qList;
-    }
+        });
+    });
+    return upgrades;
+}
 
-    let gameState = {
+function createWorldState(wKey, now = Date.now()) {
+    const config = WORLD_CONFIG[wKey];
+    return {
+        level: 1,
+        currency: 0,
+        lifetimeCurrency: 0,
+        prestigeCurrency: 0,
+        boostActiveUntil: 0,
+        boostCooldownUntil: 0,
+        lastSaveTime: now,
+        generators: config.generators.map((gen) => ({
+            ...gen,
+            owned: 0,
+            progress: 0,
+            isRunning: false,
+            automated: false
+        })),
+        managers: config.managers.map((manager) => ({ ...manager, bought: false })),
+        upgrades: createUpgradeDefinitions(config.generators)
+    };
+}
+
+function createInitialState() {
+    const now = Date.now();
+    return {
+        version: SAVE_VERSION,
         activeWorld: 'flock',
         worlds: {
-            flock: {
-                level: 1,
-                currency: 0,
-                lifetimeCurrency: 0,
-                prestigeCurrency: 0,
-                boostActiveUntil: 0,
-                boostCooldownUntil: 0,
-                generators: flockGenerators,
-                managers: flockManagers,
-                upgrades: createUpgradesForWorld(flockGenerators),
-                lastSaveTime: Date.now()
-            },
-            equine: {
-                level: 1,
-                currency: 0,
-                lifetimeCurrency: 0,
-                prestigeCurrency: 0,
-                boostActiveUntil: 0,
-                boostCooldownUntil: 0,
-                generators: equineGenerators,
-                managers: equineManagers,
-                upgrades: createUpgradesForWorld(equineGenerators),
-                lastSaveTime: Date.now()
-            }
+            flock: createWorldState('flock', now),
+            equine: createWorldState('equine', now)
         }
     };
+}
 
-    function curW() {
-        return gameState.worlds[gameState.activeWorld];
+let gameState = createInitialState();
+
+function curW() {
+    return gameState.worlds[gameState.activeWorld];
+}
+
+function curConfig() {
+    return WORLD_CONFIG[gameState.activeWorld];
+}
+
+function safeNumber(value, fallback = 0) {
+    return Number.isFinite(Number(value)) ? Number(value) : fallback;
+}
+
+function formatNumber(value) {
+    const num = Number(value);
+    if (!Number.isFinite(num) || num <= 0) return '0';
+    if (num < 1e6) return Math.floor(num).toLocaleString('en-US');
+
+    for (const entry of WORD_POWERS) {
+        if (num >= entry.val) {
+            const scaled = num / entry.val;
+            return `${scaled.toFixed(3)} ${entry.word}`;
+        }
     }
+    return num.toExponential(3);
+}
 
-    function isBoostActive(wKey) {
-        return Date.now() < gameState.worlds[wKey].boostActiveUntil;
+function formatTime(seconds) {
+    if (seconds <= 0.20) return 'Instant';
+    if (seconds < 1) return `${seconds.toFixed(2)}s`;
+    if (seconds < 60) return `${seconds.toFixed(1)}s`;
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}m ${secs}s`;
+}
+
+function isBoostActive(wKey, atMs = Date.now()) {
+    return atMs < gameState.worlds[wKey].boostActiveUntil;
+}
+
+function getPrestigeMultiplier(wKey) {
+    return 1 + gameState.worlds[wKey].prestigeCurrency * 0.10;
+}
+
+function getRankMultiplier(wKey) {
+    return 1 + Math.max(0, gameState.worlds[wKey].level - 1) * 0.05;
+}
+
+function getStaticGlobalMultiplier(wKey) {
+    const w = gameState.worlds[wKey];
+    let mult = 1;
+    if (w.managers[6]?.bought) mult *= 1.5;
+    if (w.managers[9]?.bought) mult *= 3;
+    if (w.managers[10]?.bought) mult *= 10;
+    return mult * getPrestigeMultiplier(wKey) * getRankMultiplier(wKey);
+}
+
+function getGlobalMultiplier(wKey, atMs = Date.now()) {
+    return getStaticGlobalMultiplier(wKey) * (isBoostActive(wKey, atMs) ? 2 : 1);
+}
+
+function getGeneratorDiscountFactor(wKey, genIndex) {
+    const w = gameState.worlds[wKey];
+    let bestDiscount = 0;
+    for (const upgrade of w.upgrades) {
+        if (upgrade.bought && upgrade.targetGen === genIndex && upgrade.type === 'discount') {
+            bestDiscount = Math.max(bestDiscount, upgrade.value);
+        }
     }
+    return 1 - bestDiscount;
+}
 
-    function getPrestigeMultiplier(wKey) { 
-        return 1 + (gameState.worlds[wKey].prestigeCurrency * 0.10); 
+function getGeneratorProductionMultiplier(wKey, genIndex) {
+    const w = gameState.worlds[wKey];
+    let mult = 1;
+    for (const upgrade of w.upgrades) {
+        if (upgrade.bought && upgrade.targetGen === genIndex && upgrade.type === 'mult') {
+            mult *= upgrade.value;
+        }
     }
+    return mult;
+}
 
-    function getRankMultiplier(wKey) {
-        return 1 + ((gameState.worlds[wKey].level - 1) * 0.05); // +5% per Level
-    }
+function getMilestoneSpeedMultiplier(owned) {
+    let speed = 1;
+    if (owned >= 25) speed *= 2;
+    if (owned >= 50) speed *= 2;
+    if (owned >= 100) speed *= 2;
+    if (owned >= 200) speed *= 2;
+    if (owned >= 300) speed *= 2;
+    return speed;
+}
 
-    function getGlobalMultiplier(wKey) {
-        let mult = 1;
-        const w = gameState.worlds[wKey];
-        if (w.managers[6] && w.managers[6].bought) mult *= 1.5;
-        if (w.managers[9] && w.managers[9].bought) mult *= 3.0;
-        if (w.managers[10] && w.managers[10].bought) mult *= 10.0;
-        if (isBoostActive(wKey)) mult *= 2.0;
-        return mult * getPrestigeMultiplier(wKey) * getRankMultiplier(wKey);
-    }
+function getNextMilestone(owned) {
+    if (owned < 25) return 25;
+    if (owned < 50) return 50;
+    if (owned < 100) return 100;
+    if (owned < 200) return 200;
+    if (owned < 300) return 300;
+    return (Math.floor(owned / 100) + 1) * 100;
+}
 
-    function getGenDiscount(wKey, genIndex) {
-        let discount = 0;
-        gameState.worlds[wKey].upgrades.forEach(u => {
-            if (u.targetGen === genIndex && u.type === 'discount' && u.bought) {
-                discount = Math.max(discount, u.value);
-            }
+function getCycleTime(wKey, gen) {
+    const speedManager = gameState.worlds[wKey].managers[7];
+    const globalSpeed = speedManager?.bought ? 1.25 : 1;
+    const milestoneSpeed = getMilestoneSpeedMultiplier(gen.owned);
+    return Math.max(0.05, gen.baseTime / (milestoneSpeed * globalSpeed));
+}
+
+function getCyclePayout(wKey, gen, genIndex, includeBoost = true, atMs = Date.now()) {
+    if (gen.owned <= 0) return 0;
+    const localMult = getGeneratorProductionMultiplier(wKey, genIndex);
+    const globalMult = includeBoost ? getGlobalMultiplier(wKey, atMs) : getStaticGlobalMultiplier(wKey);
+    return gen.owned * gen.baseProd * localMult * globalMult;
+}
+
+function getEstimatedEPS(wKey, includeBoost = true, atMs = Date.now()) {
+    const w = gameState.worlds[wKey];
+    let eps = 0;
+    w.generators.forEach((gen, index) => {
+        if (gen.owned > 0 && gen.automated) {
+            eps += getCyclePayout(wKey, gen, index, includeBoost, atMs) / getCycleTime(wKey, gen);
+        }
+    });
+    return eps;
+}
+
+function getBatchCost(wKey, gen, genIndex, amount) {
+    if (!Number.isFinite(amount) || amount <= 0) return 0;
+    const discountedBase = gen.baseCost * getGeneratorDiscountFactor(wKey, genIndex);
+    const currentCost = discountedBase * Math.pow(COST_MULTIPLIER, gen.owned);
+    if (amount === 1) return currentCost;
+    return currentCost * ((Math.pow(COST_MULTIPLIER, amount) - 1) / (COST_MULTIPLIER - 1));
+}
+
+function getMaxAffordableQty(wKey, gen, genIndex, currency) {
+    const discountedBase = gen.baseCost * getGeneratorDiscountFactor(wKey, genIndex);
+    const currentCost = discountedBase * Math.pow(COST_MULTIPLIER, gen.owned);
+    if (currency < currentCost) return 0;
+
+    const raw = Math.log(1 + (currency * (COST_MULTIPLIER - 1)) / currentCost) / Math.log(COST_MULTIPLIER);
+    let qty = Math.max(1, Math.floor(raw + 1e-10));
+
+    while (qty > 0 && getBatchCost(wKey, gen, genIndex, qty) > currency) qty--;
+    while (getBatchCost(wKey, gen, genIndex, qty + 1) <= currency) qty++;
+    return qty;
+}
+
+function getResolvedBuyQty(gen, genIndex) {
+    const mode = BUY_MODES[buyModeIndex];
+    const wKey = gameState.activeWorld;
+
+    if (typeof mode === 'number') return mode;
+    if (mode === 'next') return Math.max(1, getNextMilestone(gen.owned) - gen.owned);
+    if (mode === 'max') return Math.max(1, getMaxAffordableQty(wKey, gen, genIndex, curW().currency));
+    return 1;
+}
+
+function getQuestsForLevel(level, wKey) {
+    const isFlock = wKey === 'flock';
+    const unit = isFlock ? 'Eggs' : 'Horseshoes';
+    const gen0Name = isFlock ? 'Chicks' : 'Foals';
+    const gen1Name = isFlock ? 'Coops' : 'Stalls';
+    const targetQty0 = 10 + level * 8;
+    const targetBank = 50 * Math.pow(1.65, level);
+
+    const quests = [
+        {
+            id: `q_${level}_0`,
+            text: `Own ${targetQty0} ${gen0Name}`,
+            check: (w) => w.generators[0].owned >= targetQty0,
+            progress: (w) => Math.min(1, w.generators[0].owned / targetQty0)
+        },
+        {
+            id: `q_${level}_1`,
+            text: `Accumulate ${formatNumber(targetBank)} current ${unit}`,
+            check: (w) => w.currency >= targetBank,
+            progress: (w) => Math.min(1, w.currency / targetBank)
+        }
+    ];
+
+    if (level % 2 === 0) {
+        const managerTarget = Math.min(11, Math.max(1, Math.floor(level / 4)));
+        quests.push({
+            id: `q_${level}_2`,
+            text: `Hire at least ${managerTarget} Managers`,
+            check: (w) => w.managers.filter((manager) => manager.bought).length >= managerTarget,
+            progress: (w) => Math.min(1, w.managers.filter((manager) => manager.bought).length / managerTarget)
         });
-        return 1 - discount;
-    }
-
-    function getGenMultiplier(wKey, genIndex) {
-        let mult = 1;
-        gameState.worlds[wKey].upgrades.forEach(u => {
-            if (u.targetGen === genIndex && u.type === 'mult' && u.bought) {
-                mult *= u.value;
-            }
+    } else {
+        const targetQtyAny = Math.max(5, (level - 1) * 5);
+        quests.push({
+            id: `q_${level}_2`,
+            text: `Own ${targetQtyAny} ${gen1Name}`,
+            check: (w) => w.generators[1].owned >= targetQtyAny,
+            progress: (w) => Math.min(1, w.generators[1].owned / targetQtyAny)
         });
-        return mult;
     }
 
-    function getMilestoneSpeedMultiplier(owned) {
-        let speed = 1;
-        if (owned >= 25) speed *= 2;
-        if (owned >= 50) speed *= 2;
-        if (owned >= 100) speed *= 2;
-        if (owned >= 200) speed *= 2;
-        if (owned >= 300) speed *= 2;
-        return speed;
-    }
+    return quests;
+}
 
-    function getNextMilestone(owned) {
-        if (owned < 25) return 25;
-        if (owned < 50) return 50;
-        if (owned < 100) return 100;
-        if (owned < 200) return 200;
-        if (owned < 300) return 300;
-        return (Math.floor(owned / 100) + 1) * 100;
-    }
+function checkWorldQuests(wKey, celebrate = true) {
+    const w = gameState.worlds[wKey];
+    let gained = 0;
 
-    function getCycleTime(wKey, gen) {
-        const mgr8 = gameState.worlds[wKey].managers[7];
-        const globalSpeed = (mgr8 && mgr8.bought) ? 1.25 : 1.0;
-        const milestoneSpeed = getMilestoneSpeedMultiplier(gen.owned);
-        return Math.max(0.05, gen.baseTime / (milestoneSpeed * globalSpeed));
-    }
-
-    function getCyclePayout(wKey, gen, index) {
-        if (gen.owned === 0) return 0;
-        const genMult = getGenMultiplier(wKey, index);
-        const globalMult = getGlobalMultiplier(wKey);
-        return gen.owned * gen.baseProd * genMult * globalMult;
-    }
-
-    function getBatchCost(wKey, gen, genIndex, amount) {
-        if (amount <= 0) return 0;
-        const discountedBase = gen.baseCost * getGenDiscount(wKey, genIndex);
-        const currentCost = discountedBase * Math.pow(COST_MULTIPLIER, gen.owned);
-        if (amount === 1) return currentCost;
-        return currentCost * ((Math.pow(COST_MULTIPLIER, amount) - 1) / (COST_MULTIPLIER - 1));
-    }
-
-    function getResolvedBuyQty(gen, genIndex) {
-        const mode = BUY_MODES[buyModeIndex];
-        const wKey = gameState.activeWorld;
-        if (typeof mode === 'number') return mode;
-        if (mode === 'next') {
-            const nextMilestone = getNextMilestone(gen.owned);
-            return Math.max(1, nextMilestone - gen.owned);
-        }
-        if (mode === 'max') {
-            const discountedBase = gen.baseCost * getGenDiscount(wKey, genIndex);
-            const currentCost = discountedBase * Math.pow(COST_MULTIPLIER, gen.owned);
-            if (curW().currency < currentCost) return 1;
-            let n = Math.floor(Math.log(1 + (curW().currency * (COST_MULTIPLIER - 1)) / currentCost) / Math.log(COST_MULTIPLIER));
-            while (n > 1 && getBatchCost(wKey, gen, genIndex, n) > curW().currency) {
-                n--;
-            }
-            return Math.max(1, n);
-        }
-        return 1;
-    }
-
-    function getEstimatedEPS(wKey) {
-        let eps = 0;
-        const w = gameState.worlds[wKey];
-        w.generators.forEach((gen, idx) => {
-            if (gen.owned > 0 && gen.automated) {
-                const payout = getCyclePayout(wKey, gen, idx);
-                const time = getCycleTime(wKey, gen);
-                eps += (payout / time);
-            }
-        });
-        return eps;
-    }
-
-    // --- Temporary Debug Function ---
-    function debugAddCurrency() {
-        playClickSound();
-        const w = curW();
-        w.currency += 10000;
-        w.lifetimeCurrency += 10000;
-        checkQuests();
-        renderGenerators();
-        renderUpgrades();
-        renderManagers();
-        updateUI();
-    }
-
-    // --- Actions ---
-    function manualClick(e) {
-        playClickSound();
-        const wKey = gameState.activeWorld;
-        const m9 = curW().managers[8];
-        let clickVal = 1 * getGlobalMultiplier(wKey);
-        if (m9 && m9.bought) clickVal *= 100;
-        
-        curW().currency += clickVal;
-        curW().lifetimeCurrency += clickVal;
-        checkQuests();
-        updateUI();
-    }
-
-    function startCycle(index) {
-        const gen = curW().generators[index];
-        if (gen.owned > 0 && !gen.isRunning) {
-            playClickSound();
-            gen.isRunning = true;
-            gen.progress = 0;
-        }
-    }
-
-    function buyGenerator(index, e) {
-        const wKey = gameState.activeWorld;
-        const gen = curW().generators[index];
-        const qty = getResolvedBuyQty(gen, index);
-        const cost = getBatchCost(wKey, gen, index, qty);
-        if (curW().currency >= cost) {
-            playChimeSound();
-            if (e) triggerConfetti(e.clientX, e.clientY);
-            curW().currency -= cost;
-            gen.owned += qty;
-            checkQuests();
-            renderGenerators();
-            renderUpgrades();
-            renderManagers();
-            updateUI();
-        }
-    }
-
-    function buyUpgrade(index, e) {
-        const upg = curW().upgrades[index];
-        if (curW().currency >= upg.cost && !upg.bought) {
-            playChimeSound();
-            if (e) triggerConfetti(e.clientX, e.clientY);
-            curW().currency -= upg.cost;
-            upg.bought = true;
-            checkQuests();
-            renderUpgrades();
-            renderGenerators();
-            updateUI();
-        }
-    }
-
-    function buyAllAffordableUpgrades(e) {
-        const w = curW();
-        let boughtCount = 0;
-        let available = w.upgrades
-            .filter(u => !u.bought && w.generators[u.targetGen].owned > 0 && w.currency >= u.cost)
-            .sort((a, b) => a.cost - b.cost);
-
-        available.forEach(upg => {
-            if (w.currency >= upg.cost) {
-                w.currency -= upg.cost;
-                upg.bought = true;
-                boughtCount++;
-            }
-        });
-
-        if (boughtCount > 0) {
-            playChimeSound();
-            if (e) triggerConfetti(e.clientX, e.clientY);
-            checkQuests();
-            renderUpgrades();
-            renderGenerators();
-            updateUI();
-        }
-    }
-
-    function buyManager(index, e) {
-        const mgr = curW().managers[index];
-        if (curW().currency >= mgr.cost && !mgr.bought) {
-            playChimeSound();
-            if (e) triggerConfetti(e.clientX, e.clientY);
-            curW().currency -= mgr.cost;
-            mgr.bought = true;
-            
-            if (mgr.targetGen >= 0) {
-                const target = curW().generators[mgr.targetGen];
-                target.automated = true;
-                if (!target.isRunning) {
-                    target.isRunning = true;
-                    target.progress = 0;
-                }
-            }
-            checkQuests();
-            renderManagers();
-            renderGenerators();
-            updateUI();
-        }
-    }
-
-    function cycleBuyQty() {
-        playClickSound();
-        buyModeIndex = (buyModeIndex + 1) % BUY_MODES.length;
-        const currentMode = BUY_MODES[buyModeIndex];
-        const label = typeof currentMode === 'number' ? `x${currentMode}` : currentMode.toUpperCase();
-        document.getElementById('buy-mode-btn').innerText = `Buy: ${label}`;
-        renderGenerators();
-        updateUI();
-    }
-
-    function activateBoost() {
-        const now = Date.now();
-        const w = curW();
-        if (now >= w.boostCooldownUntil) {
-            playChimeSound();
-            w.boostActiveUntil = now + (2 * 60 * 1000);
-            w.boostCooldownUntil = now + (10 * 60 * 1000);
-            updateUI();
-        }
-    }
-
-    function toggleWorld() {
-        playClickSound();
-        curW().lastSaveTime = Date.now();
-        gameState.activeWorld = (gameState.activeWorld === 'flock') ? 'equine' : 'flock';
-        curW().lastSaveTime = Date.now();
-
-        applyWorldTheme();
-        renderGenerators();
-        renderUpgrades();
-        renderManagers();
-        updateUI();
-    }
-
-    function applyWorldTheme() {
-        const isFlock = gameState.activeWorld === 'flock';
-        document.body.className = isFlock ? 'theme-flock' : 'theme-equine';
-        document.getElementById('world-title').innerText = isFlock ? 'Backyard Flock' : 'Equine Estate';
-        document.getElementById('world-swap-fab').innerText = isFlock ? '🐴' : '🐔';
-        document.getElementById('gather-btn').innerText = isFlock ? '🥚 Gather Egg' : '🧲 Forge Horseshoe';
-        document.getElementById('tab-label-gen').innerText = isFlock ? 'Generators' : 'Facilities';
-        document.getElementById('prestige-title').innerText = isFlock ? 'Claim Golden Eggs' : 'Claim Golden Saddles';
-        document.getElementById('prestige-desc').innerText = isFlock 
-            ? 'Reset flock progress to attract Golden Eggs. Each Golden Egg provides a permanent +10% boost.'
-            : 'Reset estate progress to attract Golden Saddles. Each Golden Saddle provides a permanent +10% boost.';
-        document.getElementById('lifetime-label').innerText = isFlock ? 'Total Lifetime Eggs Produced:' : 'Total Lifetime Horseshoes Forged:';
-        document.getElementById('stats-modal-title').innerText = isFlock ? 'Flock Revenue Breakdown' : 'Equine Revenue Breakdown';
-        document.getElementById('rank-modal-title').innerText = isFlock ? 'Flock Rank Quests' : 'Equine Rank Quests';
-    }
-
-    function switchTab(tabId) {
-        playClickSound();
-        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-        
-        document.getElementById(`tab-${tabId}`).classList.add('active');
-        document.getElementById(`tab-btn-${tabId}`).classList.add('active');
-        if (tabId === 'generators') renderGenerators();
-        if (tabId === 'upgrades') renderUpgrades();
-        if (tabId === 'managers') renderManagers();
-    }
-
-    // --- Quests & Ranks Engine ---
-    function checkQuests() {
-        const wKey = gameState.activeWorld;
-        const w = curW();
-        if (w.level >= 50) return;
-
+    while (w.level < 50) {
         const quests = getQuestsForLevel(w.level, wKey);
-        const allCompleted = quests.every(q => q.check(w));
+        if (!quests.every((quest) => quest.check(w))) break;
+        w.level++;
+        gained++;
+    }
 
-        if (allCompleted) {
-            w.level = Math.min(50, w.level + 1);
-            playChimeSound();
-            triggerConfetti(window.innerWidth / 2, 80);
-            updateUI();
+    if (gained > 0 && celebrate && wKey === gameState.activeWorld) {
+        playChimeSound();
+        triggerConfetti(window.innerWidth / 2, 80);
+    }
+    return gained;
+}
+
+function checkAllQuests() {
+    let activeRankChanged = false;
+    for (const wKey of WORLD_KEYS) {
+        const gained = checkWorldQuests(wKey, true);
+        if (wKey === gameState.activeWorld && gained > 0) activeRankChanged = true;
+    }
+    if (activeRankChanged && isTabActive('generators')) renderGenerators();
+}
+
+function getPrestigePending(wKey = gameState.activeWorld) {
+    const w = gameState.worlds[wKey];
+    const totalEarnable = Math.floor(Math.sqrt(w.lifetimeCurrency / 100));
+    return Math.max(0, totalEarnable - w.prestigeCurrency);
+}
+
+function getBoostOverlapSeconds(wKey, startMs, endMs) {
+    const w = gameState.worlds[wKey];
+    if (!w.boostActiveUntil || endMs <= startMs) return 0;
+    const boostStart = w.boostActiveUntil - BOOST_DURATION_MS;
+    const overlapStart = Math.max(startMs, boostStart);
+    const overlapEnd = Math.min(endMs, w.boostActiveUntil);
+    return Math.max(0, overlapEnd - overlapStart) / 1000;
+}
+
+function calculateIdleGain(wKey, startMs, endMs) {
+    const elapsedSeconds = Math.max(0, endMs - startMs) / 1000;
+    if (elapsedSeconds <= 0) return 0;
+    const baseEPS = getEstimatedEPS(wKey, false, endMs);
+    const boostedSeconds = getBoostOverlapSeconds(wKey, startMs, endMs);
+    return baseEPS * (elapsedSeconds + boostedSeconds);
+}
+
+function applyIdleProgress(startMs, endMs, showModal = true) {
+    const now = endMs;
+    const summaries = [];
+    let longestAway = 0;
+
+    for (const wKey of WORLD_KEYS) {
+        const w = gameState.worlds[wKey];
+        const rawStart = Number.isFinite(startMs) ? startMs : safeNumber(w.lastSaveTime, now);
+        const cappedStart = Math.max(rawStart, now - OFFLINE_CAP_MS);
+        const elapsedMs = Math.max(0, now - cappedStart);
+        longestAway = Math.max(longestAway, elapsedMs);
+
+        const gain = calculateIdleGain(wKey, cappedStart, now);
+        if (gain > 0) {
+            w.currency += gain;
+            w.lifetimeCurrency += gain;
+            summaries.push({ wKey, gain });
         }
-    }
 
-    function openRankModal() {
-        playClickSound();
-        const wKey = gameState.activeWorld;
-        const w = curW();
-        const modal = document.getElementById('rank-modal');
-        const qContainer = document.getElementById('quest-list');
-        const sub = document.getElementById('rank-modal-sub');
-        
-        sub.innerText = `Current Level: ${w.level} / 50 (+${((w.level - 1) * 5)}% Production Bonus)`;
-        qContainer.innerHTML = '';
-
-        if (w.level >= 50) {
-            qContainer.innerHTML = `<div class="stats" style="text-align:center; padding: 25px; color: var(--primary);">👑 Maximum Rank 50 Reached! Empire fully mastered!</div>`;
-        } else {
-            const quests = getQuestsForLevel(w.level, wKey);
-            quests.forEach(q => {
-                const isDone = q.check(w);
-                const progressPct = (q.progress(w) * 100).toFixed(0);
-                qContainer.innerHTML += `
-                    <div class="quest-card ${isDone ? 'completed' : ''}">
-                        <div class="quest-header">
-                            <span>${q.text}</span>
-                            <span>${isDone ? '✅ Complete' : `${progressPct}%`}</span>
-                        </div>
-                        <div class="quest-bar-bg">
-                            <div class="quest-bar-fill" style="width: ${progressPct}%;"></div>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        modal.style.display = 'flex';
-    }
-
-    function closeRankModal() {
-        playClickSound();
-        document.getElementById('rank-modal').style.display = 'none';
-    }
-
-    // --- Prestige Engine ---
-    function calculatePendingPrestige() {
-        const totalEarnable = Math.floor(Math.sqrt(curW().lifetimeCurrency / 100));
-        return Math.max(0, totalEarnable - curW().prestigeCurrency);
-    }
-
-    function prestige(e) {
-        const pending = calculatePendingPrestige();
-        const unit = (gameState.activeWorld === 'flock') ? 'Golden Eggs' : 'Golden Saddles';
-        if (pending > 0 && confirm(`Claim ${formatFullWords(pending)} ${unit} and reset this property? (Ranks and Level bonuses persist).`)) {
-            playChimeSound();
-            if (e) triggerConfetti(e.clientX, e.clientY);
-            const w = curW();
-            w.prestigeCurrency += pending;
-            w.currency = 0;
-            w.generators.forEach(g => {
-                g.owned = 0;
-                g.progress = 0;
-                g.isRunning = false;
-                g.automated = false;
-            });
-            w.managers.forEach(m => m.bought = false);
-            w.upgrades.forEach(u => u.bought = false);
-
-            renderGenerators();
-            renderUpgrades();
-            renderManagers();
-            saveGame();
-            updateUI();
-        }
-    }
-
-    // --- Bulletproof Master Hard Reset ---
-    function hardReset() {
-        playClickSound();
-        const c1 = confirm("WARNING: Are you sure you want to completely erase ALL progress across BOTH Backyard Flock and Equine Estate, including Ranks?");
-        if (c1) {
-            const c2 = confirm("FINAL WARNING: This is completely irreversible and resets everything back to Day 1. Proceed?");
-            if (c2) {
-                // Halt all background execution timers
-                for (let i = 1; i < 99999; i++) {
-                    window.clearInterval(i);
-                    window.cancelAnimationFrame(i);
-                }
-
-                // Zero out in-memory state
-                ['flock', 'equine'].forEach(wKey => {
-                    const w = gameState.worlds[wKey];
-                    w.level = 1;
-                    w.currency = 0;
-                    w.lifetimeCurrency = 0;
-                    w.prestigeCurrency = 0;
-                    w.boostActiveUntil = 0;
-                    w.boostCooldownUntil = 0;
-                    w.generators.forEach(g => {
-                        g.owned = 0;
-                        g.progress = 0;
-                        g.isRunning = false;
-                        g.automated = false;
-                    });
-                    w.managers.forEach(m => m.bought = false);
-                    w.upgrades.forEach(u => u.bought = false);
-                });
-
-                // Clear entire phone storage domain
-                localStorage.clear();
-
-                // Reload fresh
-                window.location.href = window.location.pathname + '?reset=' + Date.now();
-            }
-        }
-    }
-
-    // --- Statistics Modal ---
-    function openStatsModal() {
-        playClickSound();
-        const wKey = gameState.activeWorld;
-        const modal = document.getElementById('stats-modal');
-        const list = document.getElementById('stats-leaderboard');
-        const unit = (wKey === 'flock') ? 'eggs/sec' : 'horseshoes/sec';
-        const totalEPS = getEstimatedEPS(wKey);
-        
-        document.getElementById('stats-modal-eps').innerText = `Total Production: +${formatFullWords(totalEPS)} ${unit}`;
-        list.innerHTML = '';
-
-        let ranked = curW().generators.map((gen, idx) => {
-            const payout = getCyclePayout(wKey, gen, idx);
-            const time = getCycleTime(wKey, gen);
-            const eps = (gen.owned > 0 && gen.automated) ? (payout / time) : 0;
-            return { name: gen.name, owned: gen.owned, eps: eps };
-        });
-
-        ranked.sort((a, b) => b.eps - a.eps);
-
-        ranked.forEach((item, idx) => {
-            const pct = (totalEPS > 0) ? ((item.eps / totalEPS) * 100).toFixed(1) : '0.0';
-            const badge = idx === 0 ? '👑 ' : '';
-            list.innerHTML += `
-                <div class="stats-row">
-                    <div>
-                        <span class="stats-rank">${badge}#${idx + 1} ${item.name}</span>
-                        <div class="stats">Owned: ${item.owned}</div>
-                    </div>
-                    <div style="text-align:right;">
-                        <div style="font-weight:bold; color:#fff;">+${formatFullWords(item.eps)}/s</div>
-                        <div class="stats">${pct}% share</div>
-                    </div>
-                </div>
-            `;
-        });
-
-        modal.style.display = 'flex';
-    }
-
-    function closeStatsModal() {
-        playClickSound();
-        document.getElementById('stats-modal').style.display = 'none';
-    }
-
-    // --- Save & Offline Processing ---
-    function saveGame() {
-        const now = Date.now();
-        gameState.worlds.flock.lastSaveTime = now;
-        gameState.worlds.equine.lastSaveTime = now;
-        localStorage.setItem('empireTycoonSaveV4', JSON.stringify(gameState));
-    }
-
-    function loadGame() {
-        const saved = localStorage.getItem('empireTycoonSaveV4');
-        if (saved) {
-            try {
-                const data = JSON.parse(saved);
-                if (data.worlds && data.worlds.flock) {
-                    gameState.activeWorld = data.activeWorld || 'flock';
-                    ['flock', 'equine'].forEach(wKey => {
-                        if (data.worlds[wKey]) {
-                            const src = data.worlds[wKey];
-                            const dst = gameState.worlds[wKey];
-                            dst.level = src.level || 1;
-                            dst.currency = src.currency || 0;
-                            dst.lifetimeCurrency = src.lifetimeCurrency || 0;
-                            dst.prestigeCurrency = src.prestigeCurrency || 0;
-                            dst.boostActiveUntil = src.boostActiveUntil || 0;
-                            dst.boostCooldownUntil = src.boostCooldownUntil || 0;
-                            dst.lastSaveTime = src.lastSaveTime || Date.now();
-
-                            if (src.generators) {
-                                src.generators.forEach((sg, i) => {
-                                    if (dst.generators[i]) {
-                                        dst.generators[i].owned = sg.owned || 0;
-                                        dst.generators[i].automated = sg.automated || false;
-                                        if (dst.generators[i].automated && dst.generators[i].owned > 0) {
-                                            dst.generators[i].isRunning = true;
-                                        }
-                                    }
-                                });
-                            }
-                            if (src.managers) {
-                                src.managers.forEach(sm => {
-                                    const m = dst.managers.find(dm => dm.id === sm.id);
-                                    if (m) m.bought = sm.bought;
-                                });
-                            }
-                            if (src.upgrades) {
-                                src.upgrades.forEach(su => {
-                                    const u = dst.upgrades.find(du => du.id === su.id);
-                                    if (u) u.bought = su.bought;
-                                });
-                            }
-                        }
-                    });
-                }
-            } catch (e) {
-                console.error("Save load error", e);
-            }
-        }
-        applyWorldTheme();
-        calculateOfflineGains();
-    }
-
-    function calculateOfflineGains() {
-        const now = Date.now();
-        ['flock', 'equine'].forEach(wKey => {
-            const w = gameState.worlds[wKey];
-            const diffSeconds = Math.min(86400, Math.max(0, (now - w.lastSaveTime) / 1000));
-            w.lastSaveTime = now;
-
-            if (diffSeconds > 30) {
-                const totalEPS = getEstimatedEPS(wKey);
-                const gains = totalEPS * diffSeconds;
-                if (gains > 0) {
-                    w.currency += gains;
-                    w.lifetimeCurrency += gains;
-                    if (wKey === gameState.activeWorld) {
-                        const unit = (wKey === 'flock') ? 'Eggs' : 'Horseshoes';
-                        document.getElementById('offline-earned').innerText = `+${formatFullWords(gains)} ${unit}`;
-                        document.getElementById('offline-modal').style.display = 'flex';
-                    }
-                }
+        const elapsedSeconds = elapsedMs / 1000;
+        w.generators.forEach((gen) => {
+            if (gen.automated && gen.owned > 0) {
+                const cycleTime = getCycleTime(wKey, gen);
+                gen.progress = (gen.progress + elapsedSeconds / cycleTime) % 1;
+                gen.isRunning = true;
             }
         });
+        w.lastSaveTime = now;
     }
 
-    function closeOfflineModal() {
-        playClickSound();
-        document.getElementById('offline-modal').style.display = 'none';
-        updateUI();
+    if (showModal && summaries.length > 0 && longestAway >= OFFLINE_MODAL_THRESHOLD_MS) {
+        showOfflineSummary(summaries);
     }
+    return summaries;
+}
 
-    // --- Renderers ---
-    function renderGenerators() {
-        const container = document.getElementById('generators-container');
-        if (!container.parentElement.classList.contains('active')) return;
-        
-        container.innerHTML = '';
-        const wKey = gameState.activeWorld;
-        const unit = (wKey === 'flock') ? 'Eggs' : 'Horseshoes';
+function applySavedOfflineProgress(showModal = true) {
+    const now = Date.now();
+    const summaries = [];
+    let longestAway = 0;
 
-        curW().generators.forEach((gen, index) => {
-            const isUnlocked = (index === 0) || (curW().generators[index - 1].owned > 0) || (gen.owned > 0);
-            
-            if (!isUnlocked) {
-                container.innerHTML += `
-                    <div class="gen-card locked-silhouette">
-                        <div class="gen-header">
-                            <div>
-                                <span class="gen-title">🔒 Undiscovered Facility</span>
-                            </div>
-                            <span class="gen-milestone">Requires prior facility</span>
-                        </div>
-                    </div>
-                `;
-                return;
-            }
+    for (const wKey of WORLD_KEYS) {
+        const w = gameState.worlds[wKey];
+        const savedAt = safeNumber(w.lastSaveTime, now);
+        const cappedStart = Math.max(savedAt, now - OFFLINE_CAP_MS);
+        const elapsedMs = Math.max(0, now - cappedStart);
+        longestAway = Math.max(longestAway, elapsedMs);
 
-            const cycleTime = getCycleTime(wKey, gen);
-            const payout = getCyclePayout(wKey, gen, index);
-            const nextMilestone = getNextMilestone(gen.owned);
-            const qty = getResolvedBuyQty(gen, index);
-            const cost = getBatchCost(wKey, gen, index, qty);
-            const isFast = (cycleTime <= 0.20 && gen.automated);
-
-            container.innerHTML += `
-                <div class="gen-card">
-                    <div class="gen-header">
-                        <div>
-                            <span class="gen-title">${gen.name}</span>
-                            <span class="gen-level">x${gen.owned}</span>
-                        </div>
-                        <span class="gen-milestone">Next Speed: ${gen.owned}/${nextMilestone}</span>
-                    </div>
-                    <div class="gen-body">
-                        <div class="gen-progress-box" onclick="startCycle(${index})">
-                            <div class="gen-progress-fill ${isFast ? 'fast-stream' : ''}" id="pfill-${index}" style="width: ${isFast ? 100 : (gen.progress * 100)}%;"></div>
-                            <div class="gen-progress-text" id="ptext-${index}">
-                                +${formatFullWords(payout)} ${unit} (${formatTime(cycleTime)})
-                            </div>
-                        </div>
-                        <button class="buy-btn" id="btn-gen-${index}" onclick="buyGenerator(${index}, event)">
-                            <span id="btn-cost-${index}">${formatFullWords(cost)}</span>
-                            <span class="buy-btn-qty" id="btn-qty-${index}">Buy x${formatFullWords(qty)}</span>
-                        </button>
-                    </div>
-                </div>
-            `;
-        });
-    }
-
-    function renderUpgrades() {
-        const container = document.getElementById('upgrades-container');
-        if (!container.parentElement.classList.contains('active')) return;
-        
-        container.innerHTML = '';
-        const w = curW();
-
-        let visibleUpgrades = w.upgrades.filter(upg => !upg.bought && w.generators[upg.targetGen].owned > 0);
-
-        visibleUpgrades.sort((a, b) => {
-            const canAffordA = w.currency >= a.cost;
-            const canAffordB = w.currency >= b.cost;
-            if (canAffordA && !canAffordB) return -1;
-            if (!canAffordA && canAffordB) return 1;
-            return a.cost - b.cost;
-        });
-
-        visibleUpgrades.forEach((upg) => {
-            const originalIndex = w.upgrades.findIndex(u => u.id === upg.id);
-            container.innerHTML += `
-                <div class="list-item upgrade">
-                    <div class="info">
-                        <h3>${upg.name}</h3>
-                        <div class="stats">${upg.desc}</div>
-                    </div>
-                    <button class="buy-btn upg-btn" id="btn-upg-${originalIndex}" onclick="buyUpgrade(${originalIndex}, event)">
-                        <span>${formatFullWords(upg.cost)}</span>
-                    </button>
-                </div>
-            `;
-        });
-
-        if (visibleUpgrades.length === 0) {
-            container.innerHTML = '<div class="stats" style="text-align:center; padding: 25px;">No upgrades available. Unlock more facilities to reveal enhancements!</div>';
-        }
-    }
-
-    function renderManagers() {
-        const container = document.getElementById('managers-container');
-        if (!container.parentElement.classList.contains('active')) return;
-        
-        container.innerHTML = '';
-        const w = curW();
-
-        let visibleManagers = w.managers.filter(mgr => {
-            if (mgr.bought) return false;
-            if (mgr.targetGen >= 0 && w.generators[mgr.targetGen].owned === 0) return false;
-            return true;
-        });
-
-        visibleManagers.forEach((mgr) => {
-            const originalIndex = w.managers.findIndex(m => m.id === mgr.id);
-            container.innerHTML += `
-                <div class="list-item manager">
-                    <div class="info">
-                        <h3>${mgr.name}</h3>
-                        <div class="stats">${mgr.desc}</div>
-                    </div>
-                    <button class="buy-btn mgr-btn" id="btn-mgr-${originalIndex}" onclick="buyManager(${originalIndex}, event)">
-                        <span>${formatFullWords(mgr.cost)}</span>
-                    </button>
-                </div>
-            `;
-        });
-
-        if (visibleManagers.length === 0) {
-            container.innerHTML = '<div class="stats" style="text-align:center; padding: 25px;">All currently available managers hired!</div>';
-        }
-    }
-
-    function updateUI() {
-        const wKey = gameState.activeWorld;
-        const w = curW();
-        const isFlock = (wKey === 'flock');
-        const unit = isFlock ? 'Eggs' : 'Horseshoes';
-        const prestigeUnit = isFlock ? 'Golden Eggs' : 'Golden Saddles';
-
-        document.getElementById('currency-count').innerText = `${formatFullWords(w.currency)} ${unit}`;
-        document.getElementById('eps').innerText = `Est: +${formatFullWords(getEstimatedEPS(wKey))} ${unit.toLowerCase()}/sec`;
-        document.getElementById('lifetime-display').innerText = formatFullWords(w.lifetimeCurrency);
-        
-        // Update Rank Ribbon
-        document.getElementById('rank-ribbon-badge').innerText = `Rank ${w.level} / 50`;
-        const quests = getQuestsForLevel(w.level, wKey);
-        const completedCount = quests.filter(q => q.check(w)).length;
-        document.getElementById('rank-ribbon-progress').innerText = `Quests: ${completedCount}/3 ▾`;
-
-        const pending = calculatePendingPrestige();
-        document.getElementById('prestige-preview').innerText = `Claimable: ${formatFullWords(pending)} ${prestigeUnit}`;
-        document.getElementById('prestige-current-bonus').innerText = `${formatFullWords(w.prestigeCurrency)} ${prestigeUnit} (+${formatFullWords(w.prestigeCurrency * 10)}% Bonus)`;
-        document.getElementById('prestige-btn').disabled = (pending <= 0);
-
-        // Boost Status Bar
-        const now = Date.now();
-        const boostBtn = document.getElementById('boost-btn');
-        const boostText = document.getElementById('boost-text');
-        if (now < w.boostActiveUntil) {
-            const remSec = Math.ceil((w.boostActiveUntil - now) / 1000);
-            boostBtn.classList.add('active');
-            boostText.innerText = `⚡ 2x Active! (${remSec}s remaining)`;
-        } else if (now < w.boostCooldownUntil) {
-            const remSec = Math.ceil((w.boostCooldownUntil - now) / 1000);
-            const m = Math.floor(remSec / 60);
-            const s = remSec % 60;
-            boostBtn.classList.remove('active');
-            boostText.innerText = `⚡ Boost: ${m}:${s < 10 ? '0' : ''}${s}`;
-        } else {
-            boostBtn.classList.remove('active');
-            boostText.innerText = `⚡ 2x Boost (Ready!)`;
+        const gain = calculateIdleGain(wKey, cappedStart, now);
+        if (gain > 0) {
+            w.currency += gain;
+            w.lifetimeCurrency += gain;
+            summaries.push({ wKey, gain });
         }
 
-        // Green Tab Notification Badges
-        let canAffordGen = false;
-        w.generators.forEach((gen, idx) => {
-            const isUnlocked = (idx === 0) || (w.generators[idx - 1].owned > 0) || (gen.owned > 0);
-            if (isUnlocked) {
-                const qty = getResolvedBuyQty(gen, idx);
-                if (w.currency >= getBatchCost(wKey, gen, idx, qty)) canAffordGen = true;
+        const elapsedSeconds = elapsedMs / 1000;
+        w.generators.forEach((gen) => {
+            if (gen.automated && gen.owned > 0) {
+                gen.progress = (gen.progress + elapsedSeconds / getCycleTime(wKey, gen)) % 1;
+                gen.isRunning = true;
             }
         });
+        w.lastSaveTime = now;
+    }
 
-        const affordableUpgs = w.upgrades.filter(u => !u.bought && w.generators[u.targetGen].owned > 0 && w.currency >= u.cost);
-        const canAffordUpg = affordableUpgs.length > 0;
-        const canAffordMgr = w.managers.some(m => !m.bought && (m.targetGen < 0 || w.generators[m.targetGen].owned > 0) && w.currency >= m.cost);
+    if (showModal && summaries.length > 0 && longestAway >= OFFLINE_MODAL_THRESHOLD_MS) {
+        showOfflineSummary(summaries);
+    }
+}
 
-        document.getElementById('badge-generators').style.display = canAffordGen ? 'block' : 'none';
-        document.getElementById('badge-upgrades').style.display = canAffordUpg ? 'block' : 'none';
-        document.getElementById('badge-managers').style.display = canAffordMgr ? 'block' : 'none';
+function showOfflineSummary(summaries) {
+    const lines = summaries.map(({ wKey, gain }) => {
+        const config = WORLD_CONFIG[wKey];
+        return `<span><strong>${config.title}:</strong> +${formatNumber(gain)} ${config.currency}</span>`;
+    });
+    $('offline-desc').innerText = 'While you were away, your automated facilities kept working.';
+    $('offline-earned').innerHTML = lines.join('<br>');$('offline-modal').style.display = 'flex';
+}
 
-        const bulkBtn = document.getElementById('btn-buy-all-upgs');
-        if (bulkBtn) {
-            bulkBtn.innerText = `Buy All Available (${affordableUpgs.length})`;
-            bulkBtn.disabled = !canAffordUpg;
+function syncAutomationForWorld(wKey) {
+    const w = gameState.worlds[wKey];
+    w.generators.forEach((gen) => {
+        gen.automated = false;
+    });
+    w.managers.forEach((manager) => {
+        if (manager.bought && manager.targetGen >= 0 && w.generators[manager.targetGen]) {
+            const gen = w.generators[manager.targetGen];
+            gen.automated = true;
+            if (gen.owned > 0) gen.isRunning = true;
         }
+    });
+}
 
-        // Generator Buttons
-        w.generators.forEach((gen, index) => {
-            const btn = document.getElementById(`btn-gen-${index}`);
-            if (btn) {
-                const qty = getResolvedBuyQty(gen, index);
-                const cost = getBatchCost(wKey, gen, index, qty);
-                const costEl = document.getElementById(`btn-cost-${index}`);
-                const qtyEl = document.getElementById(`btn-qty-${index}`);
-                if (costEl) costEl.innerText = formatFullWords(cost);
-                if (qtyEl) qtyEl.innerText = `Buy x${formatFullWords(qty)}`;
-                btn.disabled = w.currency < cost;
-            }
-        });
+function mergeSavedWorld(wKey, source) {
+    if (!source || typeof source !== 'object') return;
+    const target = gameState.worlds[wKey];
 
-        w.upgrades.forEach((upg, index) => {
-            const btn = document.getElementById(`btn-upg-${index}`);
-            if (btn) btn.disabled = w.currency < upg.cost;
-        });
+    target.level = Math.min(50, Math.max(1, Math.floor(safeNumber(source.level, 1))));
+    target.currency = Math.max(0, safeNumber(source.currency, 0));
+    target.lifetimeCurrency = Math.max(0, safeNumber(source.lifetimeCurrency, 0));
+    target.prestigeCurrency = Math.max(0, safeNumber(source.prestigeCurrency, 0));
+    target.boostActiveUntil = Math.max(0, safeNumber(source.boostActiveUntil, 0));
+    target.boostCooldownUntil = Math.max(0, safeNumber(source.boostCooldownUntil, 0));
+    target.lastSaveTime = Math.max(0, safeNumber(source.lastSaveTime, Date.now()));
 
-        w.managers.forEach((mgr, index) => {
-            const btn = document.getElementById(`btn-mgr-${index}`);
-            if (btn) btn.disabled = w.currency < mgr.cost;
-        });
+    if (Array.isArray(source.generators)) {
+        for (const targetGen of target.generators) {
+            const savedGen = source.generators.find((gen) => gen?.id === targetGen.id) ?? source.generators[target.generators.indexOf(targetGen)];
+            if (!savedGen) continue;
+            targetGen.owned = Math.max(0, Math.floor(safeNumber(savedGen.owned, 0)));
+            targetGen.progress = Math.min(0.999999, Math.max(0, safeNumber(savedGen.progress, 0)));
+            targetGen.isRunning = Boolean(savedGen.isRunning);
+        }
     }
 
-    // --- Main Loop ---
-    let lastTick = performance.now();
-
-    function gameLoop(now) {
-        const dt = (now - lastTick) / 1000;
-        lastTick = now;
-
-        ['flock', 'equine'].forEach(wKey => {
-            const w = gameState.worlds[wKey];
-            w.generators.forEach((gen, index) => {
-                if (gen.owned > 0) {
-                    const cycleTime = getCycleTime(wKey, gen);
-                    const isFast = (cycleTime <= 0.20 && gen.automated);
-
-                    if (gen.automated && !gen.isRunning) {
-                        gen.isRunning = true;
-                        gen.progress = 0;
-                    }
-
-                    if (gen.isRunning) {
-                        if (isFast) {
-                            const payoutPerSec = getCyclePayout(wKey, gen, index) / cycleTime;
-                            const framePayout = payoutPerSec * dt;
-                            w.currency += framePayout;
-                            w.lifetimeCurrency += framePayout;
-                        } else {
-                            gen.progress += (dt / cycleTime);
-                            if (gen.progress >= 1) {
-                                const payout = getCyclePayout(wKey, gen, index);
-                                w.currency += payout;
-                                w.lifetimeCurrency += payout;
-
-                                if (gen.automated) {
-                                    gen.progress %= 1;
-                                } else {
-                                    gen.progress = 0;
-                                    gen.isRunning = false;
-                                }
-                            }
-                        }
-
-                        if (wKey === gameState.activeWorld && !isFast) {
-                            const pFill = document.getElementById(`pfill-${index}`);
-                            if (pFill) pFill.style.width = `${Math.min(100, gen.progress * 100)}%`;
-                        }
-                    }
-                }
-            });
-        });
-
-        checkQuests();
-        updateUI();
-        requestAnimationFrame(gameLoop);
+    if (Array.isArray(source.managers)) {
+        for (const targetManager of target.managers) {
+            const savedManager = source.managers.find((manager) => manager?.id === targetManager.id);
+            if (savedManager) targetManager.bought = Boolean(savedManager.bought);
+        }
     }
 
-    loadGame();
+    if (Array.isArray(source.upgrades)) {
+        for (const targetUpgrade of target.upgrades) {
+            const savedUpgrade = source.upgrades.find((upgrade) => upgrade?.id === targetUpgrade.id);
+            if (savedUpgrade) targetUpgrade.bought = Boolean(savedUpgrade.bought);
+        }
+    }
+
+    syncAutomationForWorld(wKey);
+}
+
+function loadGame() {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return;
+    try {
+        const data = JSON.parse(raw);
+        gameState.activeWorld = WORLD_KEYS.includes(data.activeWorld) ? data.activeWorld : 'flock';
+        for (const wKey of WORLD_KEYS) mergeSavedWorld(wKey, data.worlds?.[wKey]);
+    } catch (e) {
+        console.error('Load failed:', e);
+    }
+}
+
+function saveGame() {
+    if (document.hidden) return;
+    const now = Date.now();
+    for (const wKey of WORLD_KEYS) gameState.worlds[wKey].lastSaveTime = now;
+    gameState.version = SAVE_VERSION;
+
+    try {
+        localStorage.setItem(SAVE_KEY, JSON.stringify(gameState));
+    } catch (error) {
+        console.error('Save failed:', error);
+    }
+}
+
+function initAudio() {
+    if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return null;
+        audioCtx = new AudioContextClass();
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+    return audioCtx;
+}
+
+function playClickSound() {
+    const ctx = initAudio();
+    if (!ctx) return;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(520, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(280, ctx.currentTime + 0.08);
+    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.08);
+}
+
+function playChimeSound() {
+    const ctx = initAudio();
+    if (!ctx) return;
+    [523.25, 659.25, 783.99, 1046.50].forEach((freq, index) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const start = ctx.currentTime + index * 0.07;
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, start);
+        gain.gain.setValueAtTime(0.12, start);
+        gain.gain.exponentialRampToValueAtTime(0.001, start + 0.25);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(start);
+        osc.stop(start + 0.25);
+    });
+}
+
+function toggleMusic() {
+    playClickSound();
+    const bgm = $('bgm');
+    const button = $('music-btn');
+
+    if (musicPlaying) {
+        bgm.pause();
+        musicPlaying = false;
+        button.innerText = '🔇';
+        return;
+    }
+
+    bgm.play()
+        .then(() => {
+            musicPlaying = true;
+            button.innerText = '🔊';
+        })
+        .catch(() => {
+            musicPlaying = false;
+            button.innerText = '🔇';
+        });
+}
+
+function triggerConfetti(x, y) {
+    const colors = ['#f39c12', '#f1c40f', '#2ecc71', '#e74c3c', '#9b59b6', '#3498db'];
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion) return;
+
+    for (let i = 0; i < 22; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'confetti-particle';
+        particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        particle.style.left = `${x}px`;
+        particle.style.top = `${y}px`;
+        document.body.appendChild(particle);
+
+        const angle = Math.random() * Math.PI * 2;
+        const velocity = 40 + Math.random() * 80;
+        const destX = Math.cos(angle) * velocity;
+        const destY = Math.sin(angle) * velocity;
+
+        requestAnimationFrame(() => {
+            particle.style.transform = `translate(${destX}px, ${destY}px) scale(0)`;
+            particle.style.opacity = '0';
+        });
+        setTimeout(() => particle.remove(), 850);
+    }
+}
+
+function celebrateEvent(event) {
+    if (event && Number.isFinite(event.clientX) && Number.isFinite(event.clientY)) {
+        triggerConfetti(event.clientX, event.clientY);
+    } else {
+        triggerConfetti(window.innerWidth / 2, window.innerHeight / 2);
+    }
+}
+
+// RESTORED: Debug Add Currency Function
+function debugAddCurrency() {
+    playClickSound();
+    const w = curW();
+    w.currency += 10000;
+    w.lifetimeCurrency += 10000;
+    checkAllQuests();
     renderGenerators();
     renderUpgrades();
     renderManagers();
-    updateUI();
+    updateUI(true);
+}
+
+function manualClick() {
+    playClickSound();
+    const wKey = gameState.activeWorld;
+    const w = curW();
+    let value = getGlobalMultiplier(wKey);
+    if (w.managers[8]?.bought) value *= 100;
+    w.currency += value;
+    w.lifetimeCurrency += value;
+    checkWorldQuests(wKey, true);
+    updateUI(true);
+}
+
+function startCycle(index) {
+    const gen = curW().generators[index];
+    if (!gen || gen.owned <= 0 || gen.automated || gen.isRunning) return;
+    playClickSound();
+    gen.isRunning = true;
+    gen.progress = 0;
+}
+
+function buyGenerator(index, event) {
+    const wKey = gameState.activeWorld;
+    const w = curW();
+    const gen = w.generators[index];
+    if (!gen) return;
+
+    const qty = getResolvedBuyQty(gen, index);
+    const cost = getBatchCost(wKey, gen, index, qty);
+    if (w.currency + 1e-9 < cost) return;
+
+    w.currency = Math.max(0, w.currency - cost);
+    gen.owned += qty;
+    if (gen.automated) gen.isRunning = true;
+
+    playChimeSound();
+    celebrateEvent(event);
+    checkWorldQuests(wKey, true);
+    renderGenerators();
+    renderUpgrades();
+    renderManagers();
+    updateUI(true);
+}
+
+function buyUpgrade(index, event) {
+    const w = curW();
+    const upgrade = w.upgrades[index];
+    if (!upgrade || upgrade.bought || w.currency + 1e-9 < upgrade.cost) return;
+
+    w.currency = Math.max(0, w.currency - upgrade.cost);
+    upgrade.bought = true;
+    playChimeSound();
+    celebrateEvent(event);
+    checkWorldQuests(gameState.activeWorld, true);
+    renderUpgrades();
+    renderGenerators();
+    updateUI(true);
+}
+
+function buyAllAffordableUpgrades(event) {
+    const w = curW();
+    const candidates = w.upgrades
+        .filter((upgrade) => !upgrade.bought && w.generators[upgrade.targetGen].owned > 0)
+        .sort((a, b) => a.cost - b.cost);
+
+    let bought = 0;
+    for (const upgrade of candidates) {
+        if (w.currency + 1e-9 < upgrade.cost) continue;
+        w.currency -= upgrade.cost;
+        upgrade.bought = true;
+        bought++;
+    }
+
+    if (!bought) return;
+    playChimeSound();
+    celebrateEvent(event);
+    checkWorldQuests(gameState.activeWorld, true);
+    renderUpgrades();
+    renderGenerators();
+    updateUI(true);
+}
+
+function buyManager(index, event) {
+    const w = curW();
+    const manager = w.managers[index];
+    if (!manager || manager.bought || w.currency + 1e-9 < manager.cost) return;
+
+    w.currency = Math.max(0, w.currency - manager.cost);
+    manager.bought = true;
+    syncAutomationForWorld(gameState.activeWorld);
+
+    playChimeSound();
+    celebrateEvent(event);
+    checkWorldQuests(gameState.activeWorld, true);
+    renderManagers();
+    renderGenerators();
+    updateUI(true);
+}
+
+function cycleBuyQty() {
+    playClickSound();
+    buyModeIndex = (buyModeIndex + 1) % BUY_MODES.length;
+    const mode = BUY_MODES[buyModeIndex];
+    $('buy-mode-btn').innerText = `Buy: ${typeof mode === 'number' ? `x${mode}` : mode.toUpperCase()}`;
+    renderGenerators();
+    updateUI(true);
+}
+
+function activateBoost() {
+    const now = Date.now();
+    const w = curW();
+    if (now < w.boostCooldownUntil) return;
+
+    playChimeSound();
+    w.boostActiveUntil = now + BOOST_DURATION_MS;
+    w.boostCooldownUntil = now + BOOST_COOLDOWN_MS;
+    saveGame();
+    updateUI(true);
+}
+
+function toggleWorld() {
+    playClickSound();
+    gameState.activeWorld = gameState.activeWorld === 'flock' ? 'equine' : 'flock';
+    applyWorldTheme();
+    renderGenerators();
+    renderUpgrades();
+    renderManagers();
+    updateUI(true);
+}
+
+function isTabActive(tabId) {
+    return $(`tab-${tabId}`)?.classList.contains('active') ?? false;
+}
+
+function switchTab(tabId) {
+    playClickSound();
+    document.querySelectorAll('.tab-content').forEach((el) => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach((el) => el.classList.remove('active'));
+    $(`tab-${tabId}`).classList.add('active');
+    $(`tab-btn-${tabId}`).classList.add('active');
+
+    if (tabId === 'generators') renderGenerators();
+    if (tabId === 'upgrades') renderUpgrades();
+    if (tabId === 'managers') renderManagers();
+    updateUI(true);
+}
+
+function applyWorldTheme() {
+    const config = curConfig();
+    document.body.className = config.themeClass;
+    $('world-title').innerText = config.title;
+    $('world-swap-fab').innerText = config.swapIcon;
+    $('gather-btn').innerText = config.gatherLabel;
+    $('tab-label-gen').innerText = config.generatorTabLabel;
+    $('prestige-title').innerText = config.prestigeTitle;
+    $('prestige-desc').innerText = config.prestigeDescription;
+    $('lifetime-label').innerText = config.lifetimeLabel;
+    $('stats-modal-title').innerText = config.statsTitle;
+    $('rank-modal-title').innerText = config.rankTitle;
+}
+
+function openRankModal() {
+    playClickSound();
+    const wKey = gameState.activeWorld;
+    const w = curW();
+    const container = $('quest-list');$('rank-modal-sub').innerText = `Current Level: ${w.level} / 50 (+${(w.level - 1) * 5}% Production Bonus)`;
+    container.innerHTML = '';
+
+    if (w.level >= 50) {
+        container.innerHTML = '<div class="stats" style="text-align:center; padding:25px; color:var(--primary);">👑 Maximum Rank 50 Reached! Empire fully mastered!</div>';
+    } else {
+        for (const quest of getQuestsForLevel(w.level, wKey)) {
+            const done = quest.check(w);
+            const pct = Math.round(quest.progress(w) * 100);
+            container.insertAdjacentHTML('beforeend', `
+                <div class="quest-card ${done ? 'completed' : ''}">
+                    <div class="quest-header">
+                        <span>${quest.text}</span>
+                        <span>${done ? '✅ Complete' : `${pct}%`}</span>
+                    </div>
+                    <div class="quest-bar-bg">
+                        <div class="quest-bar-fill" style="width:${pct}%;"></div>
+                    </div>
+                </div>
+            `);
+        }
+    }
+    $('rank-modal').style.display = 'flex';
+}
+
+function closeRankModal() {
+    playClickSound();
+    $('rank-modal').style.display = 'none';
+}
+
+function calculatePendingPrestige() {
+    return getPrestigePending(gameState.activeWorld);
+}
+
+function prestige(event) {
+    const pending = calculatePendingPrestige();
+    if (pending <= 0) return;
+
+    const config = curConfig();
+    const confirmed = confirm(`Claim ${formatNumber(pending)} ${config.prestigeCurrency} and reset this property? Ranks and permanent prestige bonuses will remain.`);
+    if (!confirmed) return;
+
+    const w = curW();
+    w.prestigeCurrency += pending;
+    w.currency = 0;
+    w.boostActiveUntil = 0;
+    w.boostCooldownUntil = 0;
+
+    w.generators.forEach((gen) => {
+        gen.owned = 0;
+        gen.progress = 0;
+        gen.isRunning = false;
+        gen.automated = false;
+    });
+    w.managers.forEach((manager) => { manager.bought = false; });
+    w.upgrades.forEach((upgrade) => { upgrade.bought = false; });
+
+    playChimeSound();
+    celebrateEvent(event);
+    renderGenerators();
+    renderUpgrades();
+    renderManagers();
+    saveGame();
+    updateUI(true);
+}
+
+// RESTORED: Bulletproof Master Hard Reset
+function hardReset() {
+    playClickSound();
+    const first = confirm('WARNING: Completely erase ALL progress across BOTH Backyard Flock and Equine Estate, including ranks and prestige?');
+    if (!first) return;
+    const second = confirm('FINAL WARNING: This cannot be undone. Start a brand-new game?');
+    if (!second) return;
+
+    for (let i = 1; i < 99999; i++) {
+        window.clearInterval(i);
+        window.cancelAnimationFrame(i);
+    }
+
+    try {
+        localStorage.clear();
+    } catch (error) {
+        console.error('Could not clear storage:', error);
+    }
+
+    window.location.href = window.location.pathname + '?reset=' + Date.now();
+}
+
+function openStatsModal() {
+    playClickSound();
+    const wKey = gameState.activeWorld;
+    const w = curW();
+    const config = curConfig();
+    const totalEPS = getEstimatedEPS(wKey);
+    $('stats-modal-eps').innerText = `Total Production: +${formatNumber(totalEPS)} ${config.currencyLower}/sec`;
+
+    const ranked = w.generators.map((gen, index) => {
+        const eps = gen.owned > 0 && gen.automated
+            ? getCyclePayout(wKey, gen, index) / getCycleTime(wKey, gen)
+            : 0;
+        return { name: gen.name, owned: gen.owned, eps };
+    }).sort((a, b) => b.eps - a.eps);
+
+    $('stats-leaderboard').innerHTML = ranked.map((item, index) => {
+        const pct = totalEPS > 0 ? (item.eps / totalEPS * 100).toFixed(1) : '0.0';
+        return `
+            <div class="stats-row">
+                <div>
+                    <span class="stats-rank">${index === 0 ? '👑 ' : ''}#${index + 1} ${item.name}</span>
+                    <div class="stats">Owned: ${item.owned}</div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-weight:bold; color:#fff;">+${formatNumber(item.eps)}/s</div>
+                    <div class="stats">${pct}% share</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    $('stats-modal').style.display = 'flex';
+}
+
+function closeStatsModal() {
+    playClickSound();
+    $('stats-modal').style.display = 'none';
+}
+
+function closeOfflineModal() {
+    playClickSound();
+    $('offline-modal').style.display = 'none';
+    updateUI(true);
+}
+
+function renderGenerators() {
+    const container = $('generators-container');
+    if (!isTabActive('generators')) return;
+
+    const wKey = gameState.activeWorld;
+    const w = curW();
+    const config = curConfig();
+    const cards = [];
+
+    w.generators.forEach((gen, index) => {
+        const unlocked = index === 0 || w.generators[index - 1].owned > 0 || gen.owned > 0;
+        if (!unlocked) {
+            cards.push(`
+                <div class="gen-card locked-silhouette">
+                    <div class="gen-header">
+                        <div><span class="gen-title">🔒 Undiscovered Facility</span></div>
+                        <span class="gen-milestone">Requires prior facility</span>
+                    </div>
+                </div>
+            `);
+            return;
+        }
+
+        const cycleTime = getCycleTime(wKey, gen);
+        const payout = getCyclePayout(wKey, gen, index);
+        const qty = getResolvedBuyQty(gen, index);
+        const cost = getBatchCost(wKey, gen, index, qty);
+        const isFast = cycleTime <= 0.20 && gen.automated;
+
+        cards.push(`
+            <div class="gen-card">
+                <div class="gen-header">
+                    <div>
+                        <span class="gen-title">${gen.name}</span>
+                        <span class="gen-level">x${formatNumber(gen.owned)}</span>
+                    </div>
+                    <span class="gen-milestone">Next Speed: ${gen.owned}/${getNextMilestone(gen.owned)}</span>
+                </div>
+                <div class="gen-body">
+                    <div class="gen-progress-box" onclick="startCycle(${index})">
+                        <div class="gen-progress-fill ${isFast ? 'fast-stream' : ''}" id="pfill-${index}" style="width:${isFast ? 100 : Math.min(100, gen.progress * 100)}%;"></div>
+                        <div class="gen-progress-text" id="ptext-${index}">+${formatNumber(payout)} ${config.currency} (${formatTime(cycleTime)})</div>
+                    </div>
+                    <button class="buy-btn" id="btn-gen-${index}" onclick="buyGenerator(${index}, event)">
+                        <span id="btn-cost-${index}">${formatNumber(cost)}</span>
+                        <span class="buy-btn-qty" id="btn-qty-${index}">Buy x${formatNumber(qty)}</span>
+                    </button>
+                </div>
+            </div>
+        `);
+    });
+
+    container.innerHTML = cards.join('');
+}
+
+function renderUpgrades() {
+    const container = $('upgrades-container');
+    if (!isTabActive('upgrades')) return;
+    const w = curW();
+
+    const visible = w.upgrades
+        .filter((upgrade) => !upgrade.bought && w.generators[upgrade.targetGen].owned > 0)
+        .sort((a, b) => {
+            const aAffordable = w.currency >= a.cost;
+            const bAffordable = w.currency >= b.cost;
+            if (aAffordable !== bAffordable) return aAffordable ? -1 : 1;
+            return a.cost - b.cost;
+        });
+
+    if (!visible.length) {
+        container.innerHTML = '<div class="stats" style="text-align:center; padding:25px;">No upgrades available. Unlock more facilities to reveal enhancements!</div>';
+        return;
+    }
+
+    container.innerHTML = visible.map((upgrade) => {
+        const index = w.upgrades.findIndex((item) => item.id === upgrade.id);
+        return `
+            <div class="list-item upgrade">
+                <div class="info">
+                    <h3>${upgrade.name}</h3>
+                    <div class="stats">${upgrade.desc}</div>
+                </div>
+                <button class="buy-btn upg-btn" id="btn-upg-${index}" onclick="buyUpgrade(${index}, event)">
+                    <span>${formatNumber(upgrade.cost)}</span>
+                </button>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderManagers() {
+    const container = $('managers-container');
+    if (!isTabActive('managers')) return;
+    const w = curW();
+
+    const visible = w.managers.filter((manager) => {
+        if (manager.bought) return false;
+        if (manager.targetGen >= 0 && w.generators[manager.targetGen].owned <= 0) return false;
+        return true;
+    });
+
+    if (!visible.length) {
+        container.innerHTML = '<div class="stats" style="text-align:center; padding:25px;">All currently available managers hired!</div>';
+        return;
+    }
+
+    container.innerHTML = visible.map((manager) => {
+        const index = w.managers.findIndex((item) => item.id === manager.id);
+        return `
+            <div class="list-item manager">
+                <div class="info">
+                    <h3>${manager.name}</h3>
+                    <div class="stats">${manager.desc}</div>
+                </div>
+                <button class="buy-btn mgr-btn" id="btn-mgr-${index}" onclick="buyManager(${index}, event)">
+                    <span>${formatNumber(manager.cost)}</span>
+                </button>
+            </div>
+        `;
+    }).join('');
+}
+
+function updateProgressBars() {
+    if (!isTabActive('generators')) return;
+    const wKey = gameState.activeWorld;
+    curW().generators.forEach((gen, index) => {
+        const fill = $(`pfill-${index}`);
+        if (!fill) return;
+        const isFast = gen.automated && getCycleTime(wKey, gen) <= 0.20;
+        if (!isFast) fill.style.width = `${Math.min(100, gen.progress * 100)}%`;
+    });
+}
+
+function updateUI(force = false) {
+    const nowPerf = performance.now();
+    if (!force && nowPerf - lastUiRefresh < UI_REFRESH_MS) return;
+    lastUiRefresh = nowPerf;
+
+    const wKey = gameState.activeWorld;
+    const w = curW();
+    const config = curConfig();
+
+    $('currency-count').innerText = `${formatNumber(w.currency)} ${config.currency}`;
+    $('eps').innerText = `Est: +${formatNumber(getEstimatedEPS(wKey))} ${config.currencyLower}/sec`;
+    $('lifetime-display').innerText = formatNumber(w.lifetimeCurrency);
+
+    $('rank-ribbon-badge').innerText = `Rank ${w.level} / 50`;
+    if (w.level >= 50) {
+        $('rank-ribbon-progress').innerText = 'Maximum Rank Reached 👑';
+    } else {
+        const quests = getQuestsForLevel(w.level, wKey);
+        const complete = quests.filter((quest) => quest.check(w)).length;
+        $('rank-ribbon-progress').innerText = `Quests: ${complete}/${quests.length} Completed ▾`;
+    }
+
+    const pending = getPrestigePending(wKey);
+    $('prestige-preview').innerText = `Claimable: ${formatNumber(pending)} ${config.prestigeCurrency}`;
+    $('prestige-current-bonus').innerText = `${formatNumber(w.prestigeCurrency)} ${config.prestigeCurrency} (+${formatNumber(w.prestigeCurrency * 10)}% Bonus)`;
+    $('prestige-btn').disabled = pending <= 0;
+
+    const now = Date.now();
+    const boostBtn = $('boost-btn');
+    const boostText = $('boost-text');
+    if (now < w.boostActiveUntil) {
+        const remaining = Math.ceil((w.boostActiveUntil - now) / 1000);
+        boostBtn.classList.add('active');
+        boostBtn.disabled = true;
+        boostText.innerText = `⚡ 2x Active! (${remaining}s remaining)`;
+    } else if (now < w.boostCooldownUntil) {
+        const remaining = Math.ceil((w.boostCooldownUntil - now) / 1000);
+        boostBtn.classList.remove('active');
+        boostBtn.disabled = true;
+        boostText.innerText = `⚡ Boost: ${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')}`;
+    } else {
+        boostBtn.classList.remove('active');
+        boostBtn.disabled = false;
+        boostText.innerText = '⚡ 2x Boost (Ready!)';
+    }
+
+    let canAffordGenerator = false;
+    w.generators.forEach((gen, index) => {
+        const unlocked = index === 0 || w.generators[index - 1].owned > 0 || gen.owned > 0;
+        if (!unlocked) return;
+        const qty = getResolvedBuyQty(gen, index);
+        const cost = getBatchCost(wKey, gen, index, qty);
+        if (w.currency >= cost) canAffordGenerator = true;
+
+        const button = $(`btn-gen-${index}`);
+        if (button) {
+            button.disabled = w.currency < cost;
+            const costEl = $(`btn-cost-${index}`);
+            const qtyEl = $(`btn-qty-${index}`);
+            const payoutEl = $(`ptext-${index}`);
+            if (costEl) costEl.innerText = formatNumber(cost);
+            if (qtyEl) qtyEl.innerText = `Buy x${formatNumber(qty)}`;
+            if (payoutEl) payoutEl.innerText = `+${formatNumber(getCyclePayout(wKey, gen, index))} ${config.currency} (${formatTime(getCycleTime(wKey, gen))})`;
+        }
+    });
+
+    const affordableUpgrades = w.upgrades.filter((upgrade) => !upgrade.bought && w.generators[upgrade.targetGen].owned > 0 && w.currency >= upgrade.cost);
+    const canAffordManager = w.managers.some((manager) => !manager.bought && (manager.targetGen < 0 || w.generators[manager.targetGen].owned > 0) && w.currency >= manager.cost);
+
+    $('badge-generators').style.display = canAffordGenerator ? 'block' : 'none';
+    $('badge-upgrades').style.display = affordableUpgrades.length ? 'block' : 'none';
+    $('badge-managers').style.display = canAffordManager ? 'block' : 'none';
+
+    const bulkButton = $('btn-buy-all-upgs');
+    if (bulkButton) {
+        bulkButton.innerText = `Buy All Available (${affordableUpgrades.length})`;
+        bulkButton.disabled = affordableUpgrades.length === 0;
+    }
+
+    w.upgrades.forEach((upgrade, index) => {
+        const button = $(`btn-upg-${index}`);
+        if (button) button.disabled = w.currency < upgrade.cost;
+    });
+
+    w.managers.forEach((manager, index) => {
+        const button = $(`btn-mgr-${index}`);
+        if (button) button.disabled = w.currency < manager.cost;
+    });
+}
+
+// True AdCap Cycle Loop with High-Speed Barber-Pole Streaming
+function advanceWorld(wKey, dtSeconds, intervalStartMs, intervalEndMs) {
+    const w = gameState.worlds[wKey];
+    const boostedSeconds = getBoostOverlapSeconds(wKey, intervalStartMs, intervalEndMs);
+
+    w.generators.forEach((gen, index) => {
+        if (gen.owned <= 0) return;
+        const cycleTime = getCycleTime(wKey, gen);
+        const isFast = cycleTime <= 0.20 && gen.automated;
+
+        if (gen.automated) {
+            gen.isRunning = true;
+        }
+
+        if (gen.isRunning) {
+            if (isFast) {
+                // Stream continuous frame payout for ultra-fast generators
+                const baseRate = getCyclePayout(wKey, gen, index, false, intervalEndMs) / cycleTime;
+                const earned = baseRate * (dtSeconds + boostedSeconds);
+                w.currency += earned;
+                w.lifetimeCurrency += earned;
+            } else {
+                // True AdCap step loop for generators > 0.20s
+                gen.progress += (dtSeconds / cycleTime);
+                if (gen.progress >= 1) {
+                    const payout = getCyclePayout(wKey, gen, index, true, intervalEndMs);
+                    w.currency += payout;
+                    w.lifetimeCurrency += payout;
+
+                    if (gen.automated) {
+                        gen.progress %= 1;
+                    } else {
+                        gen.progress = 0;
+                        gen.isRunning = false;
+                    }
+                }
+            }
+        }
+    });
+}
+
+let lastFramePerf = performance.now();
+let lastFrameWall = Date.now();
+
+function gameLoop(framePerf) {
+    const wallNow = Date.now();
+
+    if (!document.hidden) {
+        const dt = Math.max(0, (framePerf - lastFramePerf) / 1000);
+        const foregroundDt = Math.min(dt, 10);
+        const intervalStart = wallNow - foregroundDt * 1000;
+
+        for (const wKey of WORLD_KEYS) advanceWorld(wKey, foregroundDt, intervalStart, wallNow);
+        if (framePerf - lastUiRefresh >= UI_REFRESH_MS) checkAllQuests();
+        updateProgressBars();
+        updateUI(false);
+    }
+
+    lastFramePerf = framePerf;
+    lastFrameWall = wallNow;
+    requestAnimationFrame(gameLoop);
+}
+
+function handleVisibilityChange() {
+    if (document.hidden) {
+        backgroundedAt = Date.now();
+        for (const wKey of WORLD_KEYS) gameState.worlds[wKey].lastSaveTime = backgroundedAt;
+        try {
+            localStorage.setItem(SAVE_KEY, JSON.stringify(gameState));
+        } catch (error) {
+            console.error('Save failed:', error);
+        }
+        return;
+    }
+
+    const now = Date.now();
+    if (backgroundedAt !== null) {
+        applyIdleProgress(backgroundedAt, now, true);
+        backgroundedAt = null;
+    } else {
+        applySavedOfflineProgress(true);
+    }
+
+    lastFramePerf = performance.now();
+    lastFrameWall = now;
+    checkAllQuests();
+    renderGenerators();
+    renderUpgrades();
+    renderManagers();
+    updateUI(true);
+    saveGame();
+}
+
+function initializeGame() {
+    loadGame();
+    applySavedOfflineProgress(true);
+    applyWorldTheme();
+    renderGenerators();
+    renderUpgrades();
+    renderManagers();
+    checkAllQuests();
+    updateUI(true);
+    saveGame();
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pagehide', () => {
+        if (!document.hidden) saveGame();
+    });
+
+    setInterval(() => {
+        if (!document.hidden) saveGame();
+    }, AUTOSAVE_MS);
 
     requestAnimationFrame(gameLoop);
-    setInterval(saveGame, 5000); 
+}
+
+initializeGame();
 </script>
 </body>
 </html>
